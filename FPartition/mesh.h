@@ -283,6 +283,7 @@ public:
 
 	void showNormClass();
 	bool highLightCrossField(QString filePath);
+	bool showRelationPoint(QString filePath);
 	std::vector<PCPoint> highLightedCrossField;
 #pragma endregion	
 	std::vector<int> singularTXT;

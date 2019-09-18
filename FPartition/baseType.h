@@ -40,9 +40,6 @@ struct Vec3 {
 		);
 	}
 	double cross_2d(const Vec3&b) {
-		double v1 = v[0] * b.v[1];
-		double v2 = v[1] * b.v[0];
-		double v3 = v1 - v2;
 		return v[0] * b.v[1] - v[1] * b.v[0];
 	}
 };

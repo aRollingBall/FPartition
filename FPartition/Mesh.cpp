@@ -468,6 +468,7 @@ void Mesh::loadVTK(const char* fn)
 {
 	face.clear();
 	vert.clear();
+	highLightedCrossField.clear();
 	int vertCount = 0;
 	maxPointValue = -1e5;
 	minPointValue = 1e5;
@@ -3283,7 +3284,7 @@ void Mesh::setVertTagType(StreamLine sl,const HE_edge &he)
 
 void Mesh::getFacesStreamLineGoThrough()
 {
-	int streamPointIndex = 0; //SLSimplify[0]->slpc;// + SLSimplify[1]->slpc + SLSimplify[2]->slpc;
+	int streamPointIndex = 0;
 	for (int i = 0; i < SLSimplify.size(); ++i) {
 		Singular startSingular;
 		PCPoint currentPoint;
@@ -6597,7 +6598,7 @@ bool Mesh::writeToCFL(QStringList path) {
 		for (int i = 0; i < pc; ++i) {
 			tv = angleToNorm(halfVerts[i]->vec.angleP() / 4.)*halfVerts[i]->vec.norm();
 			double norm = tv.norm();
-			if (fabs(norm - 0.1) < 0.0000009)
+			if (fabs(norm - 0.1) < 1e-9)
 				norm = 0.100000;
 			norm *= 10;
 			out_x= vert[i].pos[0] * rate;
@@ -6652,7 +6653,7 @@ void Mesh::showNormClass()
 		else if (norm > 0.8 && norm <= 0.9) {
 			a[8]++;
 		}
-		else if (norm > 0.9 && norm <= 1.0) {
+		else if (norm > 0.9 && norm < 1.0) {
 			a[9]++;
 		}
 	}
@@ -6661,6 +6662,7 @@ void Mesh::showNormClass()
 }
 bool Mesh::highLightCrossField(QString filePath)
 {
+	highLightedCrossField.clear();
 	QFile fp(filePath);
 	if (!fp.open(QIODevice::ReadOnly | QIODevice::Text)) {
 		//QMessageBox::warning(NULL, "warning", "can't open output(writeToCFL) file!", QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
@@ -6671,11 +6673,11 @@ bool Mesh::highLightCrossField(QString filePath)
 	int i = 0;
 	while (!line.isNull()) {
 		if (i < vert.size()) {
-			if (line.toInt() != 0 && line.toInt() != 1) {
+			if (line.toInt() != 0 ) {
 				if (halfVerts[i] != nullptr) {
 					PCPoint temp;
 					temp.pos = halfVerts[i]->pos;
-					temp.color = Vec3(1.0, 0.0, 0.0);
+					temp.color = Vec3(0.9, 0.2, 0.1);
 					highLightedCrossField.push_back(temp);
 				}
 			}
@@ -6683,6 +6685,43 @@ bool Mesh::highLightCrossField(QString filePath)
 		}
 		i++;
 	}
+	return true;
+}
+bool Mesh::showRelationPoint(QString filePath)
+{
+	highLightedCrossField.clear();
+	QFile fp(filePath);
+	if (!fp.open(QIODevice::ReadOnly | QIODevice::Text)) {
+		//QMessageBox::warning(NULL, "warning", "can't open output(writeToCFL) file!", QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+		return false;
+	}
+	QTextStream in(&fp);
+	QString line = in.readLine();
+	int c = 0;
+	while (!line.isNull()) {
+		if (c == 5) break;
+		line = line.trimmed();
+		char idx[512];
+		sprintf(idx, "%s", line.toStdString().data());
+		int id[4];
+		sscanf(idx, "%d %d %d %d", &id[0], &id[1], &id[2],&id[3]);
+		float co=rand() % (99 + 1) / (float)(99 + 1);
+		float co2= rand() % (99 + 1) / (float)(99 + 1);
+		for (int i = 0; i < 4; i++) {
+
+			int t = id[i];
+			PCPoint temp;
+			temp.pos = vert[t].pos;
+
+			temp.color = Vec3(0.8, co, co2*co);
+			highLightedCrossField.push_back(temp);
+
+		}
+		
+		line = in.readLine();
+		c++;
+	}
+	
 	return true;
 }
 void Mesh::setLLSSpec(double spec) {

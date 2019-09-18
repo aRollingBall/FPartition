@@ -20,6 +20,7 @@ public:
 	void showCustomModel(bool b);
 	bool isHighLightCF;
 	void highLightCF();
+	void showRelationPoint();
 	//int find_face_using_selected_point();
 	//int find_vertex_using_selected_point();
 	//void buildIndex();
@@ -164,6 +165,7 @@ public:
 
 	void getNormClass();
 	void highLightCrossField(QString filePath);
+	void showRelationPoint(QString filePath);
 private:
 	void auxFun();
 	void initializeGL();

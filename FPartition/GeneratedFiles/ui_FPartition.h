@@ -38,6 +38,7 @@ public:
     QPushButton *Batch;
     QPushButton *NormClass;
     QPushButton *HighLightCF;
+    QPushButton *RelationButton;
     QFrame *line;
     QVBoxLayout *verticalLayout_11;
     QComboBox *comboBox;
@@ -216,8 +217,8 @@ public:
     QComboBox *outputFiles;
     QWidget *tab_21;
     QPushButton *btnHelp;
-    QButtonGroup *c_quaBG;
     QButtonGroup *c_sslBG;
+    QButtonGroup *c_quaBG;
 
     void setupUi(QWidget *FPartitionClass)
     {
@@ -248,6 +249,9 @@ public:
         HighLightCF = new QPushButton(glArea);
         HighLightCF->setObjectName(QStringLiteral("HighLightCF"));
         HighLightCF->setGeometry(QRect(720, 70, 75, 23));
+        RelationButton = new QPushButton(glArea);
+        RelationButton->setObjectName(QStringLiteral("RelationButton"));
+        RelationButton->setGeometry(QRect(700, 110, 98, 26));
 
         horizontalLayout_20->addWidget(glArea);
 
@@ -266,7 +270,7 @@ public:
         comboBox = new QComboBox(FPartitionClass);
         comboBox->setObjectName(QStringLiteral("comboBox"));
         comboBox->setMinimumSize(QSize(221, 22));
-        comboBox->setMaximumSize(QSize(221, 22));
+        comboBox->setMaximumSize(QSize(221, 30));
 
         verticalLayout_11->addWidget(comboBox);
 
@@ -1319,6 +1323,7 @@ public:
         Batch->setText(QApplication::translate("FPartitionClass", "Batch", Q_NULLPTR));
         NormClass->setText(QApplication::translate("FPartitionClass", "norm", Q_NULLPTR));
         HighLightCF->setText(QApplication::translate("FPartitionClass", "highlight", Q_NULLPTR));
+        RelationButton->setText(QApplication::translate("FPartitionClass", "Relation", Q_NULLPTR));
 #ifndef QT_NO_TOOLTIP
         comboBox->setToolTip(QApplication::translate("FPartitionClass", "Model selection", Q_NULLPTR));
 #endif // QT_NO_TOOLTIP

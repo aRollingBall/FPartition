@@ -126,6 +126,7 @@ FPartition::FPartition(QWidget *parent)
 	connect(ui.Batch, &QPushButton::clicked, this, &FPartition::batch);
 	connect(ui.NormClass, &QPushButton::clicked, this, &FPartition::normClass);
 	connect(ui.HighLightCF, &QPushButton::clicked, this, &FPartition::highLightCrossField);
+	connect(ui.RelationButton, &QPushButton::clicked, this, &FPartition::showRelationPoint);
 	//connect(ui.show, &QCheckBox::clicked(bool), this, &FPartition::isShow);
 	//ui.comboBox->currentIndex = -1;	
 	QRegExp rx("100|([0-9]{0,2}[.][0-9]{1,5})");
@@ -814,7 +815,7 @@ void FPartition::batch() {
 	GetAllFileFolder("D:\\Projects\\fieldGen", folders);
 	std::vector<QStringList> files;
 	for (int i = 0; i < folders.size(); ++i) {
-		if(folders[i].contains(QString("aug_")))
+		if(folders[i].contains(QString("x")))
 		    files.push_back(getFileNames(folders[i]));
 	}
 	
@@ -832,7 +833,7 @@ void FPartition::batch() {
 				ui.glArea->setDivSingular(true);
 				ui.glArea->setDivStreamLine(true);
 				ui.glArea->setDivSLSimplify(true);
-				ui.glArea->setLLSSpec(4.0);
+				// ui.glArea->setLLSSpec(4.0);
 				ui.glArea->getFacesStreamLineGoThrough(true);
 				ui.glArea->outputFiles("CFL", outFilePath);
 			}
@@ -841,6 +842,7 @@ void FPartition::batch() {
 	}
 	
 }
+
 
 void FPartition::normClass()
 {
@@ -851,6 +853,12 @@ void FPartition::highLightCrossField()
 {
 	QString fileName = QFileDialog::getOpenFileName(this, "Open File", "", "Text File(*.txt)");
 	ui.glArea->highLightCrossField(fileName);
+}
+
+void FPartition::showRelationPoint()
+{
+	QString fileName = QFileDialog::getOpenFileName(this, "Open File", "", "Text File(*.txt)");
+	ui.glArea->showRelationPoint(fileName);
 }
 
 static QStringList getFileNames(const QString &path)

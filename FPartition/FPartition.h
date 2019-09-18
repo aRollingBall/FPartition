@@ -104,6 +104,7 @@ public:
 	void batch();
 	void normClass();
 	void highLightCrossField();
+	void showRelationPoint();
 private:
 	Ui::FPartitionClass ui;
 	QString dataPath;

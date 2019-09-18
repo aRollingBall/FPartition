@@ -84,6 +84,19 @@
          <string>highlight</string>
         </property>
        </widget>
+       <widget class="QPushButton" name="RelationButton">
+        <property name="geometry">
+         <rect>
+          <x>700</x>
+          <y>110</y>
+          <width>98</width>
+          <height>26</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Relation</string>
+        </property>
+       </widget>
       </widget>
      </item>
      <item>
@@ -112,7 +125,7 @@
          <property name="maximumSize">
           <size>
            <width>221</width>
-           <height>22</height>
+           <height>30</height>
           </size>
          </property>
          <property name="toolTip">
@@ -2730,7 +2743,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="c_quaBG"/>
   <buttongroup name="c_sslBG"/>
+  <buttongroup name="c_quaBG"/>
  </buttongroups>
 </ui>

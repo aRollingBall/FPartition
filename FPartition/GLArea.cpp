@@ -241,6 +241,10 @@ void GLArea::highLightCF()
 		glDrawArrays(GL_POINTS, 0, mesh.highLightedCrossField.size());
 	}
 }
+void GLArea::showRelationPoint()
+{
+
+}
 #pragma region 图形绘制
 //流线交点
 void GLArea::renderFourSV() { 
@@ -252,7 +256,7 @@ void GLArea::renderFourSV() {
 		glVertexAttribPointerARB(locOf_color, 3, GL_DOUBLE, GL_FALSE, sizeof(fourNode), mesh.fNode[0].color.v);
 		glEnableVertexAttribArray(locOf_pos);
 		glEnableVertexAttribArray(locOf_color);
-		glPointSize(5.0);
+		glPointSize(3.0);
 		glDrawArrays(GL_POINTS, 0, mesh.fNode.size());
 	}
 }
@@ -436,7 +440,7 @@ void GLArea::renderDisQuaMesh(const Mesh& m) {
 }
 void GLArea::enableWireframe(bool on, QGLShaderProgram& shader) {
 	if (on) {
-		glLineWidth(2.);
+		glLineWidth(1.);
 		//只有在RGBA模式下，才可以使用混合功能，颜色索引模式下是无法使用混合功能的。
 		//禁用反走样
 		//glEnable(GL_LINE_SMOOTH);//启用了反走样处理得到不同的效果。启用线段的反走样处理必须使用
@@ -490,7 +494,7 @@ void GLArea::renderStreamLine(const Mesh &m) {
 		glVertexAttribPointerARB(locOf_color, 3, GL_DOUBLE, GL_FALSE, sizeof(SLPoint), mesh.dirSL[0].color.v);
 		glEnableVertexAttribArray(locOf_pos);
 		glEnableVertexAttribArray(locOf_color);
-		glLineWidth(3.0);
+		glLineWidth(1.0);
 		for (int i = 0; i < m.SLS.size(); i++) {
 			glDrawArrays(GL_LINE_STRIP, m.SLS[i]->startSLPointIndex, m.SLS[i]->slpc);
 		}
@@ -502,7 +506,7 @@ void GLArea::renderSingular(const Mesh &m) {
 	int locOf_pos = currentShader->attributeLocation("pos");
 	int locOf_color = currentShader->attributeLocation("c_color");
 	if (m.dirSV.size() > 0) {
-		glPointSize(5.0);
+		glPointSize(3.0);
 		for (int i = 0; i < mesh.dirSV.size(); i++) {
 			//if (mesh.dirSV[i]->faceI >= 0) {
 			glVertexAttribPointerARB(locOf_pos, 3, GL_DOUBLE, GL_FALSE, sizeof(Singular), mesh.dirSV[i]->pos.v);
@@ -1693,6 +1697,17 @@ void GLArea::getNormClass()
 void GLArea::highLightCrossField(QString filePath)
 {
 	if (mesh.highLightCrossField(filePath)) {
+		isHighLightCF = true;
+	}
+	else {
+		isHighLightCF = false;
+		qDebug() << "cannot highlight CF" << endl;
+	}
+	update();
+}
+void GLArea::showRelationPoint(QString filePath)
+{
+	if (mesh.showRelationPoint(filePath)) {
 		isHighLightCF = true;
 	}
 	else {
