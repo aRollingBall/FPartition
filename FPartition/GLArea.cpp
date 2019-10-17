@@ -52,7 +52,7 @@ void GLArea::Init() {
 	sslColor = s_colour;
 	quaColor = s_colour;
 	curQBT = QuaBoundaryType::INLET;
-	sslw = 4.0;
+	sslw = 1.0;
 	time = 0.0;
 
 	//is_pick_face = false;
@@ -237,7 +237,10 @@ void GLArea::highLightCF()
 		glVertexAttribPointerARB(locOf_color, 3, GL_DOUBLE, GL_FALSE, sizeof(PCPoint), mesh.highLightedCrossField[0].color.v);
 		glEnableVertexAttribArray(locOf_pos);
 		glEnableVertexAttribArray(locOf_color);
-		glPointSize(5.0);
+		glPointSize(4.0);
+		//glLineWidth(2.0);
+	    //for(int i=0;i<mesh.highLightedCrossField.size();i++)
+		//glDrawArrays(GL_LINES, 1*3, 3);
 		glDrawArrays(GL_POINTS, 0, mesh.highLightedCrossField.size());
 	}
 }
@@ -408,7 +411,7 @@ void GLArea::renderAcrossField(const Mesh& m) {
 	if (m.acrossF.size() > 0) {
 		glVertexAttribPointerARB(locOf_pos, 3, GL_DOUBLE, GL_FALSE, sizeof(Vec3), m.acrossF[0].v);
 		glEnableVertexAttribArray(locOf_pos);
-		glLineWidth(3.0);
+		glLineWidth(2.0);
 		glDrawArrays(GL_LINES, 0, m.acrossF.size());
 	}
 }

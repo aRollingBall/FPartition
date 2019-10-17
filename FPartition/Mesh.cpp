@@ -6570,16 +6570,19 @@ bool Mesh::writeToCFL(QStringList path) {
 		QTextStream stream(&fp);
 		int pc = vert.size();
 		for (int i = 0; i < pc; ++i) {
-			/*if (halfVerts[i]->vType != 0) {
-				halfVerts[i]->vType = 1;
-			}*/
+			if (halfVerts[i]->vType != 0) {
+				halfVerts[i]->vType = 2;
+			}
 			if (halfVerts[i]->isBoundary) {
+				halfVerts[i]->vType = 1;
+			}
+			/*if (halfVerts[i]->isBoundary) {
 				if (halfVerts[i]->vType != 0) {
 					halfVerts[i]->vType = 11;
 				}
 				else
 					halfVerts[i]->vType = 1;
-			}
+			}*/
 		}
 		Vec3 tv;
 		double max_fabs = 0.0;
@@ -6598,7 +6601,7 @@ bool Mesh::writeToCFL(QStringList path) {
 		for (int i = 0; i < pc; ++i) {
 			tv = angleToNorm(halfVerts[i]->vec.angleP() / 4.)*halfVerts[i]->vec.norm();
 			double norm = tv.norm();
-			if (fabs(norm - 0.1) < 1e-9)
+			if (halfVerts[i]->isBoundary)
 				norm = 0.100000;
 			norm *= 10;
 			out_x= vert[i].pos[0] * rate;
@@ -6673,16 +6676,27 @@ bool Mesh::highLightCrossField(QString filePath)
 	int i = 0;
 	while (!line.isNull()) {
 		if (i < vert.size()) {
-			if (line.toInt() != 0 ) {
-				if (halfVerts[i] != nullptr) {
-					PCPoint temp;
-					temp.pos = halfVerts[i]->pos;
-					temp.color = Vec3(0.9, 0.2, 0.1);
-					highLightedCrossField.push_back(temp);
+			if (halfVerts[i] != nullptr) {
+				PCPoint temp;
+				temp.pos = halfVerts[i]->pos;
+				if (line.toInt() == 0) {
+					temp.color = Vec3(0.0, 0.9, 0.1);
 				}
+				else if (line.toInt() == 1) {
+					if (halfVerts[i] != nullptr) {
+						temp.color = Vec3(0.9, 0.2, 0.1);
+					}
+				}
+				else if (line.toInt() == 2) {
+					if (halfVerts[i] != nullptr) {
+						temp.color = Vec3(0.1, 0.2, 0.9);
+					}
+				}
+				highLightedCrossField.push_back(temp);
 			}
 			line = in.readLine();
 		}
+		else break;
 		i++;
 	}
 	return true;
@@ -6699,25 +6713,34 @@ bool Mesh::showRelationPoint(QString filePath)
 	QString line = in.readLine();
 	int c = 0;
 	while (!line.isNull()) {
-		if (c == 5) break;
+		//if (c == 3) {
 		line = line.trimmed();
 		char idx[512];
 		sprintf(idx, "%s", line.toStdString().data());
-		int id[4];
-		sscanf(idx, "%d %d %d %d", &id[0], &id[1], &id[2],&id[3]);
-		float co=rand() % (99 + 1) / (float)(99 + 1);
-		float co2= rand() % (99 + 1) / (float)(99 + 1);
-		for (int i = 0; i < 4; i++) {
+		int id[5];
+		sscanf(idx, "%d %d %d %d %d", &id[0], &id[1], &id[2], &id[3],&id[4]);
 
+		float co = rand() % (99 + 1) / (float)(99 + 1);
+		float co2 = rand() % (99 + 1) / (float)(99 + 1);
+		for (int i = 0; i < 4; i++) {
+			if (i == 1) continue;
 			int t = id[i];
 			PCPoint temp;
 			temp.pos = vert[t].pos;
-
-			temp.color = Vec3(0.8, co, co2*co);
+			if (i == 0) temp.color = Vec3(0.0, 0.0, 0.0);
+			else temp.color = Vec3(0.8, co, co2*co);
 			highLightedCrossField.push_back(temp);
 
 		}
-		
+		Vec3 p1 = vert[id[0]].pos;
+		Vec3 p2 = vert[id[1]].pos;
+		Vec3 p3 = vert[id[2]].pos;
+		Vec3 p4 = vert[id[3]].pos;
+		qDebug() << p1.cptEuclideanDistance(p2) << " " << p1.cptEuclideanDistance(p3) << " " << p3.cptEuclideanDistance(p4) <<" "<<id[4] << endl;
+
+		//}
+
+
 		line = in.readLine();
 		c++;
 	}

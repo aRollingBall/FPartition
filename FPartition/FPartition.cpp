@@ -812,10 +812,10 @@ QStringList FPartition::listFiles(QString basename, QString extension) {
 
 void FPartition::batch() {
 	std::vector<QString> folders;
-	GetAllFileFolder("D:\\Projects\\fieldGen", folders);
+	GetAllFileFolder("D:\\Projects\\FPartition\\FPartition\\batch", folders);
 	std::vector<QStringList> files;
 	for (int i = 0; i < folders.size(); ++i) {
-		if(folders[i].contains(QString("x")))
+		if(folders[i].contains(QString("aug")))
 		    files.push_back(getFileNames(folders[i]));
 	}
 	
@@ -833,7 +833,7 @@ void FPartition::batch() {
 				ui.glArea->setDivSingular(true);
 				ui.glArea->setDivStreamLine(true);
 				ui.glArea->setDivSLSimplify(true);
-				// ui.glArea->setLLSSpec(4.0);
+				//ui.glArea->setLLSSpec(4.0);
 				ui.glArea->getFacesStreamLineGoThrough(true);
 				ui.glArea->outputFiles("CFL", outFilePath);
 			}

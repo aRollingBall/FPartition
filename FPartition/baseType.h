@@ -42,6 +42,9 @@ struct Vec3 {
 	double cross_2d(const Vec3&b) {
 		return v[0] * b.v[1] - v[1] * b.v[0];
 	}
+	double cptEuclideanDistance(const Vec3 &b) {
+		return sqrt((v[0] - b.v[0])*(v[0] - b.v[0]) + (v[1] - b.v[1])*(v[1] - b.v[1]));
+	}
 };
 struct pdStr
 {
