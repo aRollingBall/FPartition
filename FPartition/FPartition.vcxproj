@@ -96,6 +96,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="GLArea.cpp" />
+    <ClCompile Include="GlobalFunction.cpp" />
     <ClCompile Include="include\ANN\ANN.cpp" />
     <ClCompile Include="include\ANN\bd_fix_rad_search.cpp" />
     <ClCompile Include="include\ANN\bd_pr_search.cpp" />
@@ -114,8 +115,20 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="DisFieldMesh.cpp" />
+    <ClCompile Include="MLS\LinearCurve.cpp" />
+    <ClCompile Include="MLS\LocalPointset.cpp" />
+    <ClCompile Include="MLS\main.cpp" />
+    <ClCompile Include="MLS\Plane.cpp" />
+    <ClCompile Include="MLS\Point3D.cpp" />
+    <ClCompile Include="MLS\PointCloudGenerator.cpp" />
+    <ClCompile Include="MLS\QuadraticCurve.cpp" />
+    <ClCompile Include="MLS\Spline.cpp" />
+    <ClCompile Include="MLS\TriplelinePointsetClass.cpp" />
     <ClCompile Include="QuadraMesh.cpp" />
+    <ClCompile Include="Skeleton.cpp" />
+    <ClCompile Include="Skeletonization.cpp" />
     <ClCompile Include="StreamLine.cpp" />
+    <ClCompile Include="StreamLinePointCloud.cpp" />
     <ClCompile Include="ThermalField.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -164,6 +177,7 @@
     <ClInclude Include="GeneratedFiles\ui_FPartition.h" />
     <ClInclude Include="GeneratedFiles\ui_FPchart.h" />
     <ClInclude Include="global.h" />
+    <ClInclude Include="GlobalFunction.h" />
     <ClInclude Include="HalfEdgeStruct.h" />
     <ClInclude Include="include\ANN\ANN.h" />
     <ClInclude Include="include\ANN\ANNperf.h" />
@@ -178,14 +192,27 @@
     <ClInclude Include="include\ANN\pr_queue.h" />
     <ClInclude Include="include\ANN\pr_queue_k.h" />
     <ClInclude Include="mesh.h" />
+    <ClInclude Include="MLS\LinearCurve.h" />
+    <ClInclude Include="MLS\LocalPointset.h" />
+    <ClInclude Include="MLS\main.h" />
+    <ClInclude Include="MLS\Plane.h" />
+    <ClInclude Include="MLS\Point3D.h" />
+    <ClInclude Include="MLS\PointCloudGenerator.h" />
+    <ClInclude Include="MLS\QuadraticCurve.h" />
+    <ClInclude Include="MLS\Spline.h" />
+    <ClInclude Include="MLS\TriplelinePointsetClass.h" />
     <ClInclude Include="QuadraMesh.h" />
     <ClInclude Include="DisFieldMesh.h" />
     <ClInclude Include="QuaMesh.h" />
     <ClInclude Include="QuaStruct.h" />
+    <ClInclude Include="Parameter.h" />
     <ClInclude Include="Singular.h" />
+    <ClInclude Include="Skeleton.h" />
+    <ClInclude Include="Skeletonization.h" />
     <ClInclude Include="SLPoint.h" />
     <ClInclude Include="streamLine.h" />
     <ClInclude Include="StreamLineCrossFace.h" />
+    <ClInclude Include="StreamLinePointCloud.h" />
     <ClInclude Include="ThermalField.h" />
     <ClInclude Include="TriStruct.h" />
     <CustomBuild Include="GLArea.h">

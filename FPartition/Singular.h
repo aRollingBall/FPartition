@@ -27,6 +27,7 @@ public:
 	SLPoint dir[5];	//对应流线的方向
 	double bgSize;
 	bool isSelect;
+	std::vector<int> relatedBorderVerticesId;
 	Singular()
 	{
 		bFaceI.clear();

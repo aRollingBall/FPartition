@@ -118,15 +118,11 @@ FPartition::FPartition(QWidget *parent)
 	connect(ui.meshC, &QPushButton::clicked, this, &FPartition::setMeshColor);
 	//文件输出
 	connect(ui.outputFiles, static_cast<void(QComboBox::*)(const QString&)>(&QComboBox::currentIndexChanged), this, &FPartition::outputFile);
-	// 面片选择
-	//connect(ui.PF, static_cast<void(QCheckBox::*)(const bool)>(&QCheckBox::clicked), this, &FPartition::setFacePick);
-	connect(ui.AutoFacePick, static_cast<void(QCheckBox::*)(const bool)>(&QCheckBox::clicked), this, &FPartition::setPickFaceShow);
-	connect(ui.CustomCheck, static_cast<void(QCheckBox::*)(const bool)>(&QCheckBox::clicked), this, &FPartition::showCustomModel);
-
+	connect(ui.AutoFacePick, static_cast<void(QCheckBox::*)(const bool)>(&QCheckBox::clicked), this, &FPartition::getFacesStreamLineGoThrough);
 	connect(ui.Batch, &QPushButton::clicked, this, &FPartition::batch);
-	connect(ui.NormClass, &QPushButton::clicked, this, &FPartition::normClass);
-	connect(ui.HighLightCF, &QPushButton::clicked, this, &FPartition::highLightCrossField);
-	connect(ui.RelationButton, &QPushButton::clicked, this, &FPartition::showRelationPoint);
+	connect(ui.showChosedCFButton, &QPushButton::clicked, this, &FPartition::showLearningResults);
+	connect(ui.outputIntersection, &QPushButton::clicked, this, &FPartition::outputIntersection);
+	connect(ui.LineGen, &QPushButton::clicked, this, &FPartition::generateLines);
 	//connect(ui.show, &QCheckBox::clicked(bool), this, &FPartition::isShow);
 	//ui.comboBox->currentIndex = -1;	
 	QRegExp rx("100|([0-9]{0,2}[.][0-9]{1,5})");
@@ -231,9 +227,31 @@ void FPartition::outputFile(QString st) {
 		}
 	}
 }
-void FPartition::setPickFaceShow(bool b)
+void FPartition::getFacesStreamLineGoThrough(bool b)
 {
 	ui.glArea->getFacesStreamLineGoThrough(b);
+}
+
+void FPartition::showLearningResults()
+{
+	bool ok = FALSE;
+	int i = QInputDialog::getInt(this, tr("QInputDialog::getInteger()"),
+		tr("Percentage:"), 0, 0, 2, 1, &ok);
+	if (ok) {
+		QStringList fileNames; QString fileName;
+		if (i == 0) {
+			fileNames = QFileDialog::getOpenFileNames(this, "Open File", "", "Text File(*.txt)");
+			ui.glArea->showLearningResults(fileNames, i);
+		}
+		else if (i == 1) {
+			ui.glArea->showLearningResults(fileNames, i);
+		}
+		else if (i == 2) {
+			fileName = QFileDialog::getOpenFileName(this, "Open File", "", "Text File(*.txt)");
+			ui.glArea->showInputPoints(fileName);
+		}
+	}
+	
 }
 
 #pragma endregion
@@ -629,7 +647,6 @@ void FPartition::pickDataset(QString st) {
 		ui.glArea->loadShaders(shaderPath + "basic.vert.glsl", shaderPath + "basic.frag.dirHC.glsl", dirH_color);
 		ui.glArea->loadShaders(shaderPath + "basic.vert.glsl", shaderPath + "basic.frag.ssl.glsl", pure_c);
 		ui.glArea->loadShaders(shaderPath + "basic.vert.model.glsl", shaderPath + "basic.frag.model.glsl", model_color);
-		ui.glArea->loadShaders(shaderPath + "custom.vert.glsl", shaderPath + "custom.frag.glsl", custom_shader);
 		ui.outputFiles->setCurrentIndex(-1);
 	}
 	else {
@@ -639,9 +656,7 @@ void FPartition::pickDataset(QString st) {
 	ui.glArea->setWireframeMode(true);
 	helpF();
 }
-void FPartition::showCustomModel(bool b) {
-	ui.glArea->showCustomModel(b);
-}
+
 void FPartition::isShow(bool is) {
 	ui.glArea->setWireframeMode(is);
 }
@@ -811,55 +826,72 @@ QStringList FPartition::listFiles(QString basename, QString extension) {
 }
 
 void FPartition::batch() {
-	std::vector<QString> folders;
-	GetAllFileFolder("D:\\Projects\\FPartition\\FPartition\\batch", folders);
-	std::vector<QStringList> files;
-	for (int i = 0; i < folders.size(); ++i) {
-		if(folders[i].contains(QString("aug")))
-		    files.push_back(getFileNames(folders[i]));
-	}
-	
-	for (int i = 0; i < files.size(); ++i) {
-		QStringList sl = files[i];
-		for (int j = 0; j < sl.size(); ++j) {
-			QString tmp = sl.at(j);
-			QStringList outFilePath;
-			QString out1 = folders[i]+"_out" ;
-			QString out2 = tmp.split(".")[0] + ".txt";
-			outFilePath.append(out1);
-			outFilePath.append(out2);
-			if (ui.glArea->loadVTKMesh(folders[i] +"/"+tmp, tmp)) {
-				Vec3 coord = ui.glArea->loadHalfEdge();
-				ui.glArea->setDivSingular(true);
-				ui.glArea->setDivStreamLine(true);
-				ui.glArea->setDivSLSimplify(true);
-				//ui.glArea->setLLSSpec(4.0);
-				ui.glArea->getFacesStreamLineGoThrough(true);
-				ui.glArea->outputFiles("CFL", outFilePath);
+	bool ok = FALSE;
+	int choose = QInputDialog::getInt(this, tr("QInputDialog::getInteger()"),
+		tr("Percentage:"), 0, 0, 2, 1, &ok);
+	if (ok) {
+		std::vector<QString> folders;
+		if (choose == 0|| choose == 2) {
+			GetAllFileFolder("D:\\Projects\\FPartition\\FPartition\\batch\\train", folders);
+		}
+		else if (choose == 1) {
+			GetAllFileFolder("D:\\Projects\\FPartition\\FPartition\\batch\\test", folders);
+		}
+		std::vector<QStringList> files;
+		for (int i = 0; i < folders.size(); ++i) {
+			if (folders[i].contains(QString("aug")))
+				files.push_back(getFileNames(folders[i]));
+		}
+
+		for (int i = 0; i < files.size(); ++i) {
+			QStringList sl = files[i];
+			for (int j = 0; j < sl.size(); ++j) {
+				QString tmp = sl.at(j);
+				QStringList outFilePath;
+				QString out1 = folders[i] + "_out";
+				QString out2 = tmp.split(".")[0] + ".txt";
+				outFilePath.append(out1);
+				outFilePath.append(out2);
+				if (ui.glArea->loadVTKMesh(folders[i] + "/" + tmp, tmp)) {
+					Vec3 coord = ui.glArea->loadHalfEdge();
+					ui.glArea->setDivSingular(true);
+					ui.glArea->setDivStreamLine(true);
+					ui.glArea->setDivSLSimplify(true);
+					//ui.glArea->setLLSSpec(4.0);
+					ui.glArea->outputIntersection(choose);
+					if (choose == 0|| choose==1)
+					    ui.glArea->outputFiles("inter", outFilePath);
+					
+					//ui.glArea->getFacesStreamLineGoThrough(true);
+					//ui.glArea->outputFiles("CFL", outFilePath);
+				}
 			}
 		}
-		
+		if (choose == 2) {
+			QStringList outFilePath;
+			outFilePath.append(QString("D:/Projects/data/FastDivision"));
+			outFilePath.append("regressionPredictionPredData.txt");
+			ui.glArea->outputFiles("regressionPrediction", outFilePath);
+		}
 	}
-	
 }
 
-
-void FPartition::normClass()
+void FPartition::outputIntersection()
 {
-	ui.glArea->getNormClass();
+	bool ok = FALSE;
+	int choose = QInputDialog::getInt(this, tr("QInputDialog::getInteger()"),
+		tr("Percentage:"), 0, 0, 1, 1, &ok);
+	if (ok) {
+		ui.glArea->outputIntersection(choose);
+	}
 }
 
-void FPartition::highLightCrossField()
+
+void FPartition::generateLines()
 {
-	QString fileName = QFileDialog::getOpenFileName(this, "Open File", "", "Text File(*.txt)");
-	ui.glArea->highLightCrossField(fileName);
+	ui.glArea->generateLines();
 }
 
-void FPartition::showRelationPoint()
-{
-	QString fileName = QFileDialog::getOpenFileName(this, "Open File", "", "Text File(*.txt)");
-	ui.glArea->showRelationPoint(fileName);
-}
 
 static QStringList getFileNames(const QString &path)
 {

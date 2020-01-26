@@ -97,14 +97,11 @@ public:
 	//输出
 	void outputFile(QString st);
 
-	// 设置面片选择
-	//void setFacePick(bool);
-	void setPickFaceShow(bool b);
-	void showCustomModel(bool b);
+	void getFacesStreamLineGoThrough(bool b);
+	void showLearningResults();
 	void batch();
-	void normClass();
-	void highLightCrossField();
-	void showRelationPoint();
+	void outputIntersection();
+	void generateLines();
 private:
 	Ui::FPartitionClass ui;
 	QString dataPath;

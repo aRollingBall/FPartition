@@ -14,23 +14,14 @@ class GLArea :public QGLWidget
 public:
 	GLArea(QWidget* parent = Q_NULLPTR);
 
-	//bool is_pick_face;
 	ANNkd_tree* kdTree;
 	void renderSelectedFace();
-	void showCustomModel(bool b);
-	bool isHighLightCF;
-	void highLightCF();
-	void showRelationPoint();
-	//int find_face_using_selected_point();
-	//int find_vertex_using_selected_point();
-	//void buildIndex();
-	//std::vector<Face> selectedFace;
-	//std::vector<Vert> selectedVertex;
-	//std::vector<int> selectedFaceIdx;
-	//bool check_in_triangle_face(std::vector<Vec3> tri, Vec3 p);
-	//void pick_face();
+	
 	bool showPickedFace;
+	bool showPoints;
 	void getFacesStreamLineGoThrough(bool b);
+	void showLearningResults(QStringList filepath,int type);
+	void showInputPoints(QString file);
 	void loadShowDisMesh(bool on);
 	bool loadDisMesh(QString fileName, QString name);
 	bool loadVTKMesh(QString filename, QString name);
@@ -162,10 +153,9 @@ public:
 	void setShowColor(showColor, showColor);
 	void setLineSize(double sw);
 	void setPreGenQua();
-
-	void getNormClass();
-	void highLightCrossField(QString filePath);
-	void showRelationPoint(QString filePath);
+	void outputIntersection(int choose);
+	void generateLines();
+	void renderPoints();
 private:
 	void auxFun();
 	void initializeGL();
@@ -212,7 +202,6 @@ private:
 	QGLShaderProgram shaderProgram;
 	QGLShaderProgram shaderProgramModel;
 	QGLShaderProgram wireShaderProgram;
-	QGLShaderProgram customShaderProgram;
 	QGLShaderProgram *currentShader;
 
 	double eyeDist, eyePhi, eyeTheta;

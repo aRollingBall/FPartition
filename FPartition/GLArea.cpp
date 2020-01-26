@@ -55,8 +55,8 @@ void GLArea::Init() {
 	sslw = 1.0;
 	time = 0.0;
 
-	//is_pick_face = false;
 	showPickedFace = false;
+	showPoints = false;
 	kdTree = NULL;
 }
 void GLArea::paintGL()
@@ -64,6 +64,12 @@ void GLArea::paintGL()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);//表示要清除颜色缓冲以及深度缓冲，
 	setTrackballView();
 	centerMesh(mesh);
+
+	if (showPoints) {
+		enableWireframe(true, wireShaderProgram);
+		renderPoints();
+		enableWireframe(false, shaderProgramModel);
+	}
 
 	if (showSLT) {
 		enableWireframe(true, wireShaderProgram);
@@ -177,19 +183,6 @@ void GLArea::paintGL()
 		enableWireframe(false, shaderProgramModel);
 	}
 
-	/*if (is_pick_face) {
-		enableWireframe(false, wireShaderProgram);
-	    renderSelectedFace();
-	}*/
-	if (isHighLightCF) {
-		enableWireframe(true, wireShaderProgram);
-		highLightCF();
-		enableWireframe(false, shaderProgramModel);
-	}
-	if (showPickedFace) {
-		enableWireframe(false,customShaderProgram);
-		renderSelectedFace();
-	}
 	if (showModel) {
 		renderOMesh();
 	}
@@ -219,35 +212,8 @@ void GLArea::renderSelectedFace() {
 		}
 	}
 }
-void GLArea::showCustomModel(bool b)
-{
-	showWireframe = !b;
-	showPickedFace=b;
 
-	update();
-}
-void GLArea::highLightCF()
-{
-	currentShader->bind();
-	int locOf_pos = currentShader->attributeLocation("pos");
-	int locOf_color = currentShader->attributeLocation("c_color");
 
-	if (mesh.highLightedCrossField.size() > 0) {
-		glVertexAttribPointerARB(locOf_pos, 3, GL_DOUBLE, GL_FALSE, sizeof(PCPoint), mesh.highLightedCrossField[0].pos.v);
-		glVertexAttribPointerARB(locOf_color, 3, GL_DOUBLE, GL_FALSE, sizeof(PCPoint), mesh.highLightedCrossField[0].color.v);
-		glEnableVertexAttribArray(locOf_pos);
-		glEnableVertexAttribArray(locOf_color);
-		glPointSize(4.0);
-		//glLineWidth(2.0);
-	    //for(int i=0;i<mesh.highLightedCrossField.size();i++)
-		//glDrawArrays(GL_LINES, 1*3, 3);
-		glDrawArrays(GL_POINTS, 0, mesh.highLightedCrossField.size());
-	}
-}
-void GLArea::showRelationPoint()
-{
-
-}
 #pragma region 图形绘制
 //流线交点
 void GLArea::renderFourSV() { 
@@ -411,7 +377,7 @@ void GLArea::renderAcrossField(const Mesh& m) {
 	if (m.acrossF.size() > 0) {
 		glVertexAttribPointerARB(locOf_pos, 3, GL_DOUBLE, GL_FALSE, sizeof(Vec3), m.acrossF[0].v);
 		glEnableVertexAttribArray(locOf_pos);
-		glLineWidth(2.0);
+		glLineWidth(1.0);
 		glDrawArrays(GL_LINES, 0, m.acrossF.size());
 	}
 }
@@ -509,7 +475,7 @@ void GLArea::renderSingular(const Mesh &m) {
 	int locOf_pos = currentShader->attributeLocation("pos");
 	int locOf_color = currentShader->attributeLocation("c_color");
 	if (m.dirSV.size() > 0) {
-		glPointSize(3.0);
+		glPointSize(5.0);
 		for (int i = 0; i < mesh.dirSV.size(); i++) {
 			//if (mesh.dirSV[i]->faceI >= 0) {
 			glVertexAttribPointerARB(locOf_pos, 3, GL_DOUBLE, GL_FALSE, sizeof(Singular), mesh.dirSV[i]->pos.v);
@@ -953,12 +919,6 @@ bool GLArea::loadShaders(QString vertFileName, QString fragFileName, showColor c
 		shaderProgramModel.link();
 		shaderProgramModel.bind();
 		break;
-	case custom_shader:
-		customShaderProgram.removeAllShaders();
-		customShaderProgram.addShaderFromSourceFile(QGLShader::Vertex, vertFileName);
-		customShaderProgram.addShaderFromSourceFile(QGLShader::Fragment, fragFileName);
-		customShaderProgram.link();
-		customShaderProgram.bind();
 	default:
 		break;
 	}
@@ -1258,176 +1218,35 @@ void GLArea::setDisField(bool on) {
 	emit updateDisSpecState(mesh.isGenDF);
 	update();
 }
-//void GLArea::buildIndex()
-//{
-//	if (mesh.vert.size() == 0)
-//		return;
-//
-//	unsigned nv = mesh.vert.size();
-//	ANNpointArray dataPts = annAllocPts(nv, 2); // 顶点个数
-//	int count = 0;
-//	for (int i = 0; i<mesh.vert.size(); ++i)
-//	{
-//		dataPts[count][0] = mesh.vert[i].pos[0];
-//		dataPts[count][1] = mesh.vert[i].pos[1];
-//		//dataPts[count][2] = mesh.vert[i].pos[2];
-//		++count;
-//	}
-//	if (kdTree)
-//		delete kdTree;
-//	kdTree = new ANNkd_tree(dataPts, nv, 2);
-//}
-//int GLArea::find_vertex_using_selected_point()
-//{
-//	ANNpoint tp = annAllocPt(3);
-//	tp[0] = curSimPos.pos[0];
-//	tp[1] = curSimPos.pos[1];
-//	tp[2] = curSimPos.pos[2];
-//	ANNidxArray nnIdx = new ANNidx[1];
-//	ANNdistArray dists = new ANNdist[1];
-//	kdTree->annkSearch(tp, 1, nnIdx, dists);
-//	return nnIdx[0];
-//}
-//int GLArea::find_face_using_selected_point()
-//{
-//	int rv = find_vertex_using_selected_point();
-//	HE_vert *hv = mesh.halfVerts[rv];
-//	HE_edge *he = mesh.halfEdges[hv->edgeI];
-//
-//	HE_face *hf = mesh.halfFaces[he->faceI];
-//	HE_edge he_t(*he);
-//	//Mesh::VertexFaceIter vf_it = mesh.vf_iter(mesh.vertex_handle(rv));
-//	int desiredFace = -1; //double minLen = 10*radius();
-//	std::vector<Vec3> tri_p(3);
-//	int tri_count = 0;
-//	Vec3 resultP(curSimPos.pos[0], curSimPos.pos[1], curSimPos.pos[2]);
-//	while (1) {
-//		tri_count = 0;
-//		HE_edge he_tt(he_t);
-//		while (tri_count<3) {
-//			tri_p[tri_count] = mesh.halfVerts[he_tt.vertI]->pos;
-//			he_tt = *mesh.halfEdges[he_tt.nextI];
-//			/*if (he_tt->index == he_t->index) {
-//			break;
-//			}*/
-//			tri_count++;
-//		}
-//		if (check_in_triangle_face(tri_p, resultP)) {
-//			desiredFace = hf->index;
-//			break;
-//		}
-//		if (he_t.pairI != -1) {
-//			if (mesh.halfEdges[mesh.halfEdges[he_t.pairI]->nextI]->index != he->index) {
-//				he_t = *mesh.halfEdges[mesh.halfEdges[he_t.pairI]->nextI];
-//				hf = mesh.halfFaces[he_t.faceI];
-//			}
-//			else break;
-//		}
-//		else {
-//			if (he->pairI != -1) {
-//				break;
-//			}
-//			if (mesh.halfEdges[he_t.frontI]->pairI != -1) {
-//				he_t = *mesh.halfEdges[mesh.halfEdges[he_t.frontI]->pairI];
-//				hf = mesh.halfFaces[he_t.faceI];
-//			}
-//			else break;
-//		}
-//	}
-//
-//	if (desiredFace < 0)
-//	{
-//		for (int i = 0; i<mesh.face.size(); ++i)
-//		{
-//			tri_count = 0;
-//			hf = mesh.halfFaces[i];
-//			he_t = *mesh.halfEdges[hf->edgeI];
-//			HE_edge he_tt(he_t);
-//			while (tri_count<3) {
-//				tri_p[tri_count] = mesh.halfVerts[he_tt.vertI]->pos;
-//				he_tt = *mesh.halfEdges[he_tt.nextI];
-//				tri_count++;
-//			}
-//			if (check_in_triangle_face(tri_p, resultP)) {
-//				desiredFace = hf->index;
-//				break;
-//			}
-//		}
-//	}
-//
-//	return  desiredFace;
-//}
-
-//void GLArea::pick_face()
-//{
-//	int desiredFace = find_face_using_selected_point();
-//	if (desiredFace < 0) return;
-//	//desiredFace = 9289;
-//	//lastestFace = desiredFace;
-//	qDebug("Select fase  %d\n", desiredFace);
-//
-//	std::vector<int>::iterator it;
-//	if ((it = std::find(selectedFaceIdx.begin(), selectedFaceIdx.end(), desiredFace)) == selectedFaceIdx.end())
-//	{
-//		selectedFaceIdx.push_back(desiredFace);
-//	/*	mesh.vert[mesh.face[desiredFace].index[0]].selectedColor = Vec3(1.0,0.0,0.0);
-//		mesh.vert[mesh.face[desiredFace].index[1]].selectedColor = Vec3(1.0, 0.0, 0.0);
-//		mesh.vert[mesh.face[desiredFace].index[2]].selectedColor = Vec3(1.0, 0.0, 0.0);*/
-//		mesh.halfFaces[desiredFace]->is_selected=true;
-//	}
-//	else
-//	{
-//		mesh.halfFaces[desiredFace]->is_selected = false;
-//		/*mesh.vert[mesh.face[*it].index[0]].selectedColor = Vec3(0.0, 0.0, 0.0);
-//		mesh.vert[mesh.face[*it].index[1]].selectedColor = Vec3(0.0, 0.0, 0.0);
-//		mesh.vert[mesh.face[*it].index[2]].selectedColor = Vec3(0.0, 0.0, 0.0);*/
-//		selectedFaceIdx.erase(it);
-//		
-//
-//	}
-//	//selectedFace.clear();
-//	//selectedVertex.clear();
-//
-//	update();
-//}
-//bool GLArea::check_in_triangle_face(std::vector<Vec3> tri, Vec3 p)
-//{
-//	Vec3 v1 = tri[1] - tri[0];
-//	Vec3 v2 = tri[2] - tri[0];
-//	p[2] = 0.0;
-//	Vec3 n = v1.cross(v2);
-//	double face_area = n.norm(); //三角形的面积
-//	n = n.normalized();
-//	double all_area = 0;
-//	for (unsigned i = 0; i < tri.size(); ++i)
-//	{
-//		unsigned next_i = (i + 1) % tri.size();
-//		unsigned prev_i = (i + tri.size() - 1) % tri.size();
-//		v1 = tri[next_i] - p;
-//		v2 = tri[prev_i] - p;
-//		double area = abs((v1.cross(v2))*n);
-//		all_area += area;
-//		if (area < 0)
-//		{
-//			return false;
-//		}
-//	}
-//	if (std::abs(all_area - face_area) < 1e-8) {
-//		return true;
-//	}
-//	else {
-//		return false;
-//	}
-//}
 
 void GLArea::getFacesStreamLineGoThrough(bool b)
 {
 	if (b) {
-		mesh.getFacesStreamLineGoThrough();
+		mesh.getFacesStreamLineGoThrough_();
 	}
-	showPickedFace = b;
+	showPoints = true;
+	//showPickedFace = b;
 }
 
+void GLArea::showLearningResults(QStringList filePath,int type)
+{
+	if(!filePath.empty()&&type==0)
+	    mesh.readLearningResults(filePath);
+	//else if (type == 1) mesh.filterPotentialTrueResults();
+	if (mesh.showLearningResults(type)) {
+		showDirectField = true;
+	}
+	else {
+		showDirectField = false;
+		qDebug() << "data is empty" << endl;
+	}
+	update();
+}
+void GLArea::showInputPoints(QString path) {
+	mesh.constructNormalVtx();
+	mesh.showInputPoints(path);
+	showPoints = true;
+}
 void GLArea::loadShowDisMesh(bool on) {
 	showDisMesh = on;
 	if (on && disMesh.isLoad && !disMesh.isGenDisF) {
@@ -1693,32 +1512,51 @@ void GLArea::setPreGenQua() {
 	showQuaSSL = false;
 	preGenQud = false;
 }
-void GLArea::getNormClass()
+
+void GLArea::outputIntersection(int choose)
 {
-	mesh.showNormClass();
+	mesh.constructNormalVtx();
+	mesh.constructBorders();
+	if (choose == 0) {
+		mesh.interpolateStreamLine(mesh.avgBorderSegLength);
+		mesh.gatherPoints(mesh.avgBorderSegLength*1.2, mesh.diagonalLength / 150);
+	}
+	else if (choose == 1) {
+		mesh.interpolateStreamLine(mesh.avgBorderSegLength);
+		mesh.gatherTestPoints(mesh.avgBorderSegLength*1.2);
+	}
+	else if (choose == 2) {
+		mesh.getFacesStreamLineGoThrough_();
+
+	}
+	//showPoints = true;
 }
-void GLArea::highLightCrossField(QString filePath)
+
+void GLArea::generateLines()
 {
-	if (mesh.highLightCrossField(filePath)) {
-		isHighLightCF = true;
+	//mesh.generatePotentialCrossoverPtsGroup();
+	
+	if (mesh.interpolatePoints()) {
+		showSingular = true;
 	}
-	else {
-		isHighLightCF = false;
-		qDebug() << "cannot highlight CF" << endl;
-	}
-	update();
+	else showSingular = false;
 }
-void GLArea::showRelationPoint(QString filePath)
+
+void GLArea::renderPoints()
 {
-	if (mesh.showRelationPoint(filePath)) {
-		isHighLightCF = true;
+	currentShader->bind();
+	int locOf_pos = currentShader->attributeLocation("pos");
+	int locOf_color = currentShader->attributeLocation("c_color");
+	if (mesh.renderPoints.size() > 0) {
+		glVertexAttribPointerARB(locOf_pos, 3, GL_DOUBLE, GL_FALSE, sizeof(PCPoint), mesh.renderPoints[0].pos.v);
+		glVertexAttribPointerARB(locOf_color, 3, GL_DOUBLE, GL_FALSE, sizeof(PCPoint), mesh.renderPoints[0].color.v);
+		glEnableVertexAttribArray(locOf_pos);
+		glEnableVertexAttribArray(locOf_color);
+		glPointSize(6.0);
+		glDrawArrays(GL_POINTS, 0, mesh.renderPoints.size());
 	}
-	else {
-		isHighLightCF = false;
-		qDebug() << "cannot highlight CF" << endl;
-	}
-	update();
 }
+
 //设置边界流线类型（用于数值计算）
 void GLArea::setNonSVBor(bool on) {
 	mesh.isNonSVBor = on;
@@ -1967,6 +1805,12 @@ void GLArea::outputFiles(QString st, QStringList path) {
 		if (!mesh.writeToCFL(path)) {
 			QMessageBox::warning(NULL, "warning", "CFL Build failed!", QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
 		}
+	}
+	else if (st == "inter") {
+		mesh.outputIntersection(path[0]+"\\"+path[1]);
+	}
+	else if (st == "regressionPrediction") {
+		mesh.outputRegressionPredictionTrainData(path[0] + "\\" + path[1]);
 	}
 	else {
 		QMessageBox::warning(NULL, "warning", "unknown mistake!", QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);

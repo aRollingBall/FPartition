@@ -8,6 +8,9 @@
 #include"StreamLineCrossFace.h"
 #include"QuaMesh.h"
 #include"qstring.h"
+#include "MLS\TriplelinePointsetClass.h"
+#include "MLS\Point3D.h"
+using namespace std;
 //#include"Fit.h"
 #pragma region const
 const int SVertCount = 100;		//奇点的最大数量
@@ -63,6 +66,7 @@ private:
 	double minPointValue;		//最小权重值
 	Vec3 maxPos;		//矩形网格最右上方点
 	Vec3 minPos;		//矩形网格最左下方点
+	
 	double disQuaSize;		//距离矩形规格
 	double difQuaSize;		//差分矩形网格
 	double maxDis;		//记录个点到相应中轴线的最大距离
@@ -124,10 +128,45 @@ private:
 #pragma endregion
 public:
 #pragma region variable
+	TriplelinePointsetClass TPC;
+	double diagonalLength;
+	double avgBorderSegLength;
 	std::vector<Vert> vert;
 	std::vector<Face> face;
+	vector<BorderVertex*> borders;
+	vector<Intersection> intersections;
+	vector<Intersection> pointsOutOfScope;
+	vector<PCPoint> renderPoints;
+	vector<Point3D> PointCloud;
+	std::vector<LearningResult> allLearningResults;
+	std::vector<NormalVtx>  normalVertices;
+    void constructBorders();
+	void constructNormalVtx();
+	void Curve_Reconstruction();
+	Vec3 calcIntersection(Vec3 &vs,Vec3 &ve,Vec3 &us,Vec3 &ue);
+	bool calcCross(Vec3 &vs, Vec3 &ve, Vec3 &us, Vec3 &ue);
+	void interpolateStreamLine(double density);
+	void interpolateBorder(double density);
+
+	void gatherPoints(double tolerance, double increment);
+	void gatherTestPoints(double tolerance);
+	void outputIntersection(QString path);
+	BorderVertex* borderHead;
+	void shootRayFromSingularity();
+	void shootRayFromBorder(double increment);
+	
+	std::vector<int> portentialFaces;
+	vector<NormalVtx> regressionPredictionTrainPoints;
+	bool interpolatePoints();
+
+	std::vector<Vec3> interPoints;
 	void setVertTagType(StreamLine sl, const HE_edge &he);
 	void getFacesStreamLineGoThrough();
+	void getFacesStreamLineGoThrough_();
+	void normalizeRegressionPoints(NormalVtx& nv);
+	void outputRegressionPredictionTrainData(QString path);
+	bool isPointInTriangle(Vec3 a,Vec3 b,Vec3 c,Vec3 p);
+	
 	int getNextFace(HE_face &curFace,HE_edge &curEdge, Vec3 &v1, Vec3 &v2, Vec3 &u1, Vec3 &u2,const StreamLine &sl);
 	HE_edge **halfEdges;
 	HE_vert **halfVerts;
@@ -280,11 +319,12 @@ public:
 	bool writeToExcel(QString path);
 	bool writeToPAT3(QString path);
 	bool writeToCFL(QStringList path);
+	bool showInputPoints(QString path);
+	bool readLearningResults(QStringList filepaths);
+	bool showLearningResults(int type);
+	bool readBarycenter(QString filePath);
+	std::vector<PCPoint> highLightedElements;
 
-	void showNormClass();
-	bool highLightCrossField(QString filePath);
-	bool showRelationPoint(QString filePath);
-	std::vector<PCPoint> highLightedCrossField;
 #pragma endregion	
 	std::vector<int> singularTXT;
 	void loadTXT(const char*fn);

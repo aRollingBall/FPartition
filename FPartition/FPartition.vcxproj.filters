@@ -38,6 +38,9 @@
       <Extensions>cpp;moc</Extensions>
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
+    <Filter Include="Skeletonization">
+      <UniqueIdentifier>{67c5c033-f081-4ea7-83cb-af1d9fcde189}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -128,6 +131,45 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="include\ANN\perf.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MLS\LinearCurve.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MLS\LocalPointset.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MLS\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MLS\Plane.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MLS\Point3D.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MLS\PointCloudGenerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MLS\QuadraticCurve.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MLS\Spline.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MLS\TriplelinePointsetClass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StreamLinePointCloud.cpp">
+      <Filter>Skeletonization</Filter>
+    </ClCompile>
+    <ClCompile Include="Skeletonization.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GlobalFunction.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Skeleton.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -244,6 +286,48 @@
     </ClInclude>
     <ClInclude Include="include\ANN\pr_queue_k.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MLS\LinearCurve.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MLS\LocalPointset.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MLS\main.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MLS\Plane.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MLS\Point3D.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MLS\PointCloudGenerator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MLS\QuadraticCurve.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MLS\Spline.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MLS\TriplelinePointsetClass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StreamLinePointCloud.h">
+      <Filter>Skeletonization</Filter>
+    </ClInclude>
+    <ClInclude Include="Skeleton.h">
+      <Filter>Skeletonization</Filter>
+    </ClInclude>
+    <ClInclude Include="Skeletonization.h">
+      <Filter>Skeletonization</Filter>
+    </ClInclude>
+    <ClInclude Include="Parameter.h">
+      <Filter>Skeletonization</Filter>
+    </ClInclude>
+    <ClInclude Include="GlobalFunction.h">
+      <Filter>Skeletonization</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

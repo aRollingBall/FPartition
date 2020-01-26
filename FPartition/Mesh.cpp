@@ -1,4 +1,4 @@
-#include "mesh.h"
+ï»¿#include "mesh.h"
 #include<qfile.h>
 #include<qpair.h>
 #include<qstring.h>
@@ -7,6 +7,10 @@
 #include<qmessagebox.h>
 #include<qinputdialog.h>
 #include <QDir>
+#include <queue>
+#include <map>
+#include <stack>
+#include <random>
 bool Mesh::isEmpty() const
 {
 	return Mesh::face.size() > 0 ? false : true;
@@ -295,7 +299,7 @@ void Mesh::loadVTK1(const char*fn) {
 					maxPointValue = v;
 				}
 				if (v < minPointValue) {
-					//·ÀÖ¹¹ıĞ¡
+					//é˜²æ­¢è¿‡å°
 					tempPointValue = minPointValue;
 					minPointValue = v;
 				}
@@ -315,8 +319,8 @@ void Mesh::loadVTK1(const char*fn) {
 			vecs.push_back(v);
 		}
 	}
-	//¼ÇÂ¼Ä£ĞÍ³ß´ç
-	boxCenter = (minPos + maxPos) / 2.0;//µÃµ½×îĞ¡ÈİÄÉ3DÄ£ĞÍµÄÁ¢·½Ìå
+	//è®°å½•æ¨¡å‹å°ºå¯¸
+	boxCenter = (minPos + maxPos) / 2.0;//å¾—åˆ°æœ€å°å®¹çº³3Dæ¨¡å‹çš„ç«‹æ–¹ä½“
 	boxSize = (minPos - maxPos).norm();
 	//minPointValue = tempPointValue;
 	//colorSLT.reserve(vert.size());
@@ -332,7 +336,7 @@ void Mesh::loadVTK1(const char*fn) {
 		v.pos = *iter1;
 		//v.uValue = *iter2;
 		vert.push_back(v);
-		//¸ù¾İ½Ç¶ÈµÃµ½Ê¸Á¿
+		//æ ¹æ®è§’åº¦å¾—åˆ°çŸ¢é‡
 		if (isVecs) {
 			halfVerts[vertCount++] = new HE_vert(*iter1, vecs[vertCount]);
 		}
@@ -393,7 +397,7 @@ void Mesh::loadTXT(const char*fn) {
 			double u;
 			double n[2];
 			sscanf(pp, "%d %lf %lf %lf %lf %lf", &pI, &(v[0]), &(v[1]), &u, &(n[0]), &(n[1]));
-			//ÔÚ¶ÁÈ¡Êı¾İÊ±£¬´æ´¢µÄÊÇ°ËÎ»¾«¶È£¬ºóÁ½Î»Ëæ»úÌí¼Ó
+			//åœ¨è¯»å–æ•°æ®æ—¶ï¼Œå­˜å‚¨çš„æ˜¯å…«ä½ç²¾åº¦ï¼Œåä¸¤ä½éšæœºæ·»åŠ 
 			//v = v*(-1.0);
 			if (maxPos.v[0] < v[0]) {
 				maxPos.v[0] = v[0];
@@ -411,7 +415,7 @@ void Mesh::loadTXT(const char*fn) {
 				maxPointValue = u;
 			}
 			if (u < minPointValue) {
-				//·ÀÖ¹¹ıĞ¡
+				//é˜²æ­¢è¿‡å°
 				tempPointValue = minPointValue;
 				minPointValue = u;
 			}
@@ -443,8 +447,8 @@ void Mesh::loadTXT(const char*fn) {
 		}
 	}
 	int vertCount = 0;
-	//¼ÇÂ¼Ä£ĞÍ³ß´ç
-	boxCenter = (minPos + maxPos) / 2.0;//µÃµ½×îĞ¡ÈİÄÉ3DÄ£ĞÍµÄÁ¢·½Ìå
+	//è®°å½•æ¨¡å‹å°ºå¯¸
+	boxCenter = (minPos + maxPos) / 2.0;//å¾—åˆ°æœ€å°å®¹çº³3Dæ¨¡å‹çš„ç«‹æ–¹ä½“
 	boxSize = (minPos - maxPos).norm();
 	std::vector<Vec3>::iterator iter1 = pos.begin();
 	std::vector<double>::iterator iter2 = values.begin();
@@ -455,7 +459,7 @@ void Mesh::loadTXT(const char*fn) {
 		v.uValue = *iter2;
 		vert.push_back(v);
 		halfVerts[vertCount++] = new HE_vert(*iter1, *vecIter);
-		//vDif.push_back(4.0);	//Ä¬ÈÏÎªÆæµã±ß½ç4.0
+		//vDif.push_back(4.0);	//é»˜è®¤ä¸ºå¥‡ç‚¹è¾¹ç•Œ4.0
 		//vDis.push_back(-1.0);
 		//vDiw.push_back(*iter2);
 	}
@@ -468,7 +472,20 @@ void Mesh::loadVTK(const char* fn)
 {
 	face.clear();
 	vert.clear();
-	highLightedCrossField.clear();
+	if (!borders.empty()) {
+		for (int i = 0; i < borders.size(); ++i) {
+			if (borders[i] != NULL) {
+				delete borders[i];
+			}
+		}
+	}
+	//regressionPredictionTrainPoints.clear();
+	normalVertices.clear();
+	borders.clear();
+	intersections.clear();
+	pointsOutOfScope.clear();
+	renderPoints.clear();
+	highLightedElements.clear();
 	int vertCount = 0;
 	maxPointValue = -1e5;
 	minPointValue = 1e5;
@@ -568,7 +585,7 @@ void Mesh::loadVTK(const char* fn)
 					maxPointValue = v;
 				}
 				if (v < minPointValue) {
-					//·ÀÖ¹¹ıĞ¡
+					//é˜²æ­¢è¿‡å°
 					tempPointValue = minPointValue;
 					minPointValue = v;
 				}
@@ -588,9 +605,10 @@ void Mesh::loadVTK(const char* fn)
 			vecs.push_back(v);
 		}
 	}
-	//¼ÇÂ¼Ä£ĞÍ³ß´ç
-	boxCenter = (minPos + maxPos) / 2.0;//µÃµ½×îĞ¡ÈİÄÉ3DÄ£ĞÍµÄÁ¢·½Ìå
+	//è®°å½•æ¨¡å‹å°ºå¯¸
+	boxCenter = (minPos + maxPos) / 2.0;//å¾—åˆ°æœ€å°å®¹çº³3Dæ¨¡å‹çš„ç«‹æ–¹ä½“
 	boxSize = (minPos - maxPos).norm();
+	diagonalLength = maxPos.cptEuclideanDistance(minPos);
 	//minPointValue = tempPointValue;
 	//colorSLT.reserve(vert.size());
 	std::vector<Vec3>::iterator iter1 = pos.begin();
@@ -606,7 +624,7 @@ void Mesh::loadVTK(const char* fn)
 		v.uValue = *iter2;
 		v.selectedColor = Vec3(0.0, 0.0, 0.0);
 		vert.push_back(v);
-		//¸ù¾İ½Ç¶ÈµÃµ½Ê¸Á¿
+		//æ ¹æ®è§’åº¦å¾—åˆ°çŸ¢é‡
 		if (isVecs) {
 			halfVerts[vertCount++] = new HE_vert(*iter1, vecs[vertCount]);
 		}
@@ -674,10 +692,10 @@ double Mesh::getWeight(int vertI) {
 	{
 	case v_sl:
 		if (fabs(maxPointValue - minPointValue - 3.0) < 1e-5) {
-			return  vert[vertI].uValue;	//¶ÔÓ¦·¶Î§¡¾1.0~4.0¡¿,±ß½ç1.0,Ææµã4.0
+			return  vert[vertI].uValue;	//å¯¹åº”èŒƒå›´ã€1.0~4.0ã€‘,è¾¹ç•Œ1.0,å¥‡ç‚¹4.0
 		}
 		else {
-			return fabs(3.0*(maxPointValue - vert[vertI].uValue) / (maxPointValue - minPointValue)) + 1.0;	//¶ÔÓ¦·¶Î§¡¾0.0~1.0¡¿
+			return fabs(3.0*(maxPointValue - vert[vertI].uValue) / (maxPointValue - minPointValue)) + 1.0;	//å¯¹åº”èŒƒå›´ã€0.0~1.0ã€‘
 		}
 		break;
 	case dis_sl:
@@ -706,7 +724,7 @@ static bool cocircle(Vec3 p1, Vec3 p2, Vec3 p3, Vec3& q, double& r) {
 	double z2 = x12*(p1[0] + p2[0]) + y12*(p1[1] + p2[1]);
 	double z3 = x13*(p1[0] + p3[0]) + y13*(p1[1] + p3[1]);
 	double d = 2.0*(x12*(p3[1] - p2[1]) - y12*(p3[0] - p2[0]));
-	if (fabs(d) < 1e-7) //¹²Ïß£¬Ô²²»´æÔÚ   
+	if (fabs(d) < 1e-7) //å…±çº¿ï¼Œåœ†ä¸å­˜åœ¨   
 		return false;
 	q[0] = (y13*z2 - y12*z3) / d;
 	q[1] = (x12*z3 - x13*z2) / d;
@@ -717,7 +735,7 @@ static double mult(Vec3 a, Vec3 b, Vec3 c)
 {
 	return (a.v[0] - c.v[0])*(b.v[1] - c.v[1]) - (b.v[0] - c.v[0])*(a.v[1] - c.v[1]);
 }
-//ÅĞ¶ÏÁ½Ïß¶ÎÊÇ·ñÏà½»£¬ÈôÏà½»£¬·µ»Ø½»µã
+//åˆ¤æ–­ä¸¤çº¿æ®µæ˜¯å¦ç›¸äº¤ï¼Œè‹¥ç›¸äº¤ï¼Œè¿”å›äº¤ç‚¹
 static bool isCross(Vec3 pos1, Vec3 pos2, Vec3 pos3, Vec3 pos4, Vec3& pos) {
 	pos = Vec3();
 	if ((pos1 - pos3).norm() < 1e-5 || (pos1 - pos4).norm() < 1e-5) {
@@ -744,7 +762,7 @@ static bool isCross(Vec3 pos1, Vec3 pos2, Vec3 pos3, Vec3 pos4, Vec3& pos) {
 		return true;
 	}
 }
-//¼ÆËãµÚÈı¸öµãÔÚÇ°Á½¸öµãÁ¬ÏßµÄ±ÈÂÊ£¨µ±±ÈÂÊÎª0£¬ÔòµÚÈı¸öµãÎªµÚÒ»¸öµã£©
+//è®¡ç®—ç¬¬ä¸‰ä¸ªç‚¹åœ¨å‰ä¸¤ä¸ªç‚¹è¿çº¿çš„æ¯”ç‡ï¼ˆå½“æ¯”ç‡ä¸º0ï¼Œåˆ™ç¬¬ä¸‰ä¸ªç‚¹ä¸ºç¬¬ä¸€ä¸ªç‚¹ï¼‰
 static double getRotate(Vec3 v1, Vec3 v2, Vec3 v3) {
 	if (fabs(v2.v[1] - v1.v[1]) < 1.0e-9) {
 		if (fabs(v2.v[0] - v1.v[0]) > 1.0e-9) {
@@ -758,7 +776,7 @@ static double getRotate(Vec3 v1, Vec3 v2, Vec3 v3) {
 		return  (v3.v[1] - v1.v[1]) / (v2.v[1] - v1.v[1]);
 	}
 }
-//Í¨¹ıÈı¸öÏòÁ¿ÅĞ¶ÏÊÇ·ñ°üº¬
+//é€šè¿‡ä¸‰ä¸ªå‘é‡åˆ¤æ–­æ˜¯å¦åŒ…å«
 static bool calParToP(Vec3 v1, Vec3 v2, Vec3 v3) {
 	double t1, t2;
 	t1 = t2 = -1.0;
@@ -788,7 +806,7 @@ static bool calParToP(Vec3 v1, Vec3 v2, Vec3 v3) {
 		return false;
 	}
 }
-//ÅĞ¶ÏÈı½ÇĞÎÉÏÄ³µãÏòÁ¿ÊÇ·ñÖ¸ÏòÈı½ÇĞÎ,µÚËÄ¸ö²ÎÊıÎªÅĞ¶ÏÏòÁ¿£¬µÚÒ»¸öºÍµÚÈı¸öÎªÏàÁÚÏòÁ¿
+//åˆ¤æ–­ä¸‰è§’å½¢ä¸ŠæŸç‚¹å‘é‡æ˜¯å¦æŒ‡å‘ä¸‰è§’å½¢,ç¬¬å››ä¸ªå‚æ•°ä¸ºåˆ¤æ–­å‘é‡ï¼Œç¬¬ä¸€ä¸ªå’Œç¬¬ä¸‰ä¸ªä¸ºç›¸é‚»å‘é‡
 static bool dirTri(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4) {
 	if (calParToP(v1, v2, v4) || calParToP(v2, v3, v4)) {
 		return true;
@@ -797,7 +815,7 @@ static bool dirTri(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4) {
 		return false;
 	}
 }
-//ÇóÄ³µãÍ¶Ó°µ½Ö±ÏßµÄµã£¬¸½´øÈı½ÇĞÎÅĞ¶Ï
+//æ±‚æŸç‚¹æŠ•å½±åˆ°ç›´çº¿çš„ç‚¹ï¼Œé™„å¸¦ä¸‰è§’å½¢åˆ¤æ–­
 static Vec3 getFootPoint(Vec3 pos, Vec3 pos1, Vec3 pos2) {
 	Vec3 rValue(interDim*2.0);
 	if ((pos - pos1).norm() > interDim && (pos - pos2).norm() > interDim && (pos1 - pos2).norm() > interDim &&
@@ -816,9 +834,9 @@ static Vec3 getFootPoint(Vec3 pos, Vec3 pos1, Vec3 pos2) {
 static double angledif(Vec3 v1, Vec3 v2) {
 	return (v1*v2) / (v1.norm()*v2.norm());
 }
-//Í¨¹ı¸ø¶¨Ò»¸ö½Ç¶È£¬Ñ°ÕÒÓëÒ»¸ö½Ç¶ÈºÍÆäÁíÍâÈı¸ö²îÖµÎª90¶ÈÏà½üµÄ½Ç¶È
+//é€šè¿‡ç»™å®šä¸€ä¸ªè§’åº¦ï¼Œå¯»æ‰¾ä¸ä¸€ä¸ªè§’åº¦å’Œå…¶å¦å¤–ä¸‰ä¸ªå·®å€¼ä¸º90åº¦ç›¸è¿‘çš„è§’åº¦
 static double findAngleToAngle(double angle1, double angle2) {
-	//µÚÒ»¸ö½Ç¶ÈÎªÖ¸¶¨µÄ½Ç¶È£¬µÚ¶ş¸ö½Ç¶ÈÎª´ıÅĞ¶Ï½Ç¶È
+	//ç¬¬ä¸€ä¸ªè§’åº¦ä¸ºæŒ‡å®šçš„è§’åº¦ï¼Œç¬¬äºŒä¸ªè§’åº¦ä¸ºå¾…åˆ¤æ–­è§’åº¦
 	double minDif1 = fabs(angle1 - angle2);
 	double minDif = fabs(minDif1 - 2.0*Q_PI) > minDif1 ? minDif1 : fabs(minDif1 - 2.0*Q_PI);
 
@@ -841,22 +859,22 @@ static double findAngleToAngle(double angle1, double angle2) {
 }
 void Mesh::findEdgePointPlus(int edgeI, Vec3 startPos, SLPoint* endPos, int &endPosNum) {
 	HE_edge *sEdge = halfEdges[edgeI];
-	int sEdgePairVI = halfEdges[halfEdges[sEdge->nextI]->nextI]->vertI;//ÒÔ·À·´Ïò°ë±ß²»´æÔÚ
+	int sEdgePairVI = halfEdges[halfEdges[sEdge->nextI]->nextI]->vertI;//ä»¥é˜²åå‘åŠè¾¹ä¸å­˜åœ¨
 	Vec3 n1 = halfVerts[sEdgePairVI]->vec;
 	Vec3 n2 = halfVerts[sEdge->vertI]->vec;
 	Vec3 pos1 = halfVerts[sEdgePairVI]->pos;
 	Vec3 pos2 = halfVerts[sEdge->vertI]->pos;
 	Vec3 nc1 = angleToNorm(n1.angleP() / 4.0)*n1.norm();
 	Vec3 nc2 = angleToNorm(findAngleToAngle(n1.angleP() / 4.0, n2.angleP() / 4.0))*n2.norm();
-	//ÓÉÓÚ´æÔÚÏòÁ¿³¡ÖĞÏòÁ¿Ä£½ÏĞ¡µ¼ÖÂÊı¾İ¾«È·¶È²»¹»£¬ÔÚ´Ëµ÷Õû
-	//·½ÏòÏòÁ¿µÄ×îĞ¡¿É´ï1e-5
+	//ç”±äºå­˜åœ¨å‘é‡åœºä¸­å‘é‡æ¨¡è¾ƒå°å¯¼è‡´æ•°æ®ç²¾ç¡®åº¦ä¸å¤Ÿï¼Œåœ¨æ­¤è°ƒæ•´
+	//æ–¹å‘å‘é‡çš„æœ€å°å¯è¾¾1e-5
 	double dataAccur = 1.0e3;
 	double tA[2], tB[2], tC[2];
-	//µ±´¹Ö±
+	//å½“å‚ç›´
 	tA[0] = (pos2[0] - pos1[0])*(nc2[0] - nc1[0])*dataAccur + (pos2[1] - pos1[1])*(nc2[1] - nc1[1])*dataAccur;
 	tB[0] = (nc2[0] - nc1[0])*(pos1[0] - startPos[0])*dataAccur + (nc2[1] - nc1[1])*(pos1[1] - startPos[1])*dataAccur + (pos2[0] - pos1[0])*nc1[0] * dataAccur + (pos2[1] - pos1[1])*nc1[1] * dataAccur;
 	tC[0] = (pos1[0] - startPos[0])*nc1[0] * dataAccur + (pos1[1] - startPos[1])*nc1[1] * dataAccur;
-	//µ±Æ½ĞĞ
+	//å½“å¹³è¡Œ
 	tA[1] = (pos2[0] - pos1[0])*(nc2[1] - nc1[1])*dataAccur - (pos2[1] - pos1[1])*(nc2[0] - nc1[0])*dataAccur;
 	tB[1] = (nc2[1] - nc1[1])*(pos1[0] - startPos[0])*dataAccur - (nc2[0] - nc1[0])*(pos1[1] - startPos[1])*dataAccur + (pos2[0] - pos1[0])*nc1[1] * dataAccur - (pos2[1] - pos1[1])*nc1[0] * dataAccur;
 	tC[1] = (pos1[0] - startPos[0])*nc1[1] * dataAccur - (pos1[1] - startPos[1])*nc1[0] * dataAccur;
@@ -868,7 +886,7 @@ void Mesh::findEdgePointPlus(int edgeI, Vec3 startPos, SLPoint* endPos, int &end
 					Vec3 pos3 = pos1*(1.0 - st) + pos2* st;
 					endPos[endPosNum].pos = pos3;
 					endPos[endPosNum].edgeI = sEdge->index;
-					endPos[endPosNum++].vec = pos3 - startPos;//·½ÏòÃ÷È·
+					endPos[endPosNum++].vec = pos3 - startPos;//æ–¹å‘æ˜ç¡®
 				}
 			}
 		}
@@ -914,7 +932,7 @@ static double pointsAngle(Vec3 v1, Vec3 v2) {
 		return atan2(v2[1], v2[0]) - atan2(v1[1], v1[0]);
 	}
 }
-//Í¨¹ı¸ø¶¨Èı¸öµã×ø±êºÍÒ»¸öÊ¸Á¿ÒÔ¼°¶ÔÓ¦µÄÏÂÒ»¸öµã
+//é€šè¿‡ç»™å®šä¸‰ä¸ªç‚¹åæ ‡å’Œä¸€ä¸ªçŸ¢é‡ä»¥åŠå¯¹åº”çš„ä¸‹ä¸€ä¸ªç‚¹
 static void calPoint(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 n, Vec3 &endPos)
 {
 	//17.12.22 
@@ -934,7 +952,7 @@ static void calPoint(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 n, Vec3 &endPos)
 		}
 	}
 }
-//Ñ°ÕÒÁ½Ïß¶Î½»µã
+//å¯»æ‰¾ä¸¤çº¿æ®µäº¤ç‚¹
 static bool findInterP(Vec3 v1, Vec3 v2, Vec3 u1, Vec3 u2, Vec3& target) {
 	Vec3 v1v2 = v2 - v1;
 	Vec3 v1u1 = u1 - v1;
@@ -959,8 +977,8 @@ static bool findInterP(Vec3 v1, Vec3 v2, Vec3 u1, Vec3 u2, Vec3& target) {
 	return false;
 }
 static int getLineSegmentIntersectionType(Vec3 v1, Vec3 v2, Vec3 u1, Vec3 u2) {
-	Vec3 v2_v1 = v2 - v1; //Á÷Ïß
-	Vec3 u2_u1 = u2 - u1; //Íø¸ñ±ß
+	Vec3 v2_v1 = v2 - v1; //æµçº¿
+	Vec3 u2_u1 = u2 - u1; //ç½‘æ ¼è¾¹
 	Vec3 v2_u1 = v2 - u1;
 	Vec3 v2_u2 = v2 - u2;
 	Vec3 u2_v1 = u2 - v1;
@@ -975,9 +993,15 @@ static int getLineSegmentIntersectionType(Vec3 v1, Vec3 v2, Vec3 u1, Vec3 u2) {
 	}*/
 	if (v2_v1.cross_2d(v2_u1)*v2_v1.cross_2d(v2_u2) < 0.0
 		&& u2_u1.cross_2d(u2_v1)*u2_u1.cross_2d(u2_v2) < 0.0) {
-		//½»²æÏà½»
+		//äº¤å‰ç›¸äº¤
 		return 0;
 	}
+	//if (v2_v1.cross_2d(v2_u1)*v2_v1.cross_2d(v2_u2) < 0.0
+	//	&& u2_u1.cross_2d(u2_v1)*u2_u1.cross_2d(u2_v2) == 0.0) {
+	//	//äº¤å‰ç›¸äº¤
+	//	return 0;
+	//}
+	
 	if (v2_v1.cross_2d(v2_u1) > 0.0 && v2_v1.cross_2d(v2_u2) < 0.0
 		&& u2_u1.cross_2d(u2_v1) == 0.0 && u2_u1.cross_2d(u2_v2) > 0.0) {
 		return 1;
@@ -988,44 +1012,44 @@ static int getLineSegmentIntersectionType(Vec3 v1, Vec3 v2, Vec3 u1, Vec3 u2) {
 	}
 	if (v2_v1.cross_2d(v2_u1) == 0 && v2_v1.cross_2d(v2_u2) < 0.0
 		&& u2_u1.cross_2d(u2_v1) < 0 && u2_u1.cross_2d(u2_v2) > 0.0) {
-		return 3; // °ë±ßÖÕÖ¹ÓÚÁ÷ÏßµÄÇé¿ö
+		return 3; // åŠè¾¹ç»ˆæ­¢äºæµçº¿çš„æƒ…å†µ
 	}
 	if (v2_v1.cross_2d(v2_u1) > 0 && v2_v1.cross_2d(v2_u2) == 0.0
 		&& u2_u1.cross_2d(u2_v1) < 0 && u2_u1.cross_2d(u2_v2) > 0.0) {
-		// °ë±ßÆğÊ¼ÓÚÁ÷ÏßµÄÇé¿ö
+		// åŠè¾¹èµ·å§‹äºæµçº¿çš„æƒ…å†µ
 		return 4;
 	}
 	if (v2_v1.cross_2d(v2_u1) < 0 && v2_v1.cross_2d(v2_u2) == 0.0
 		&& u2_u1.cross_2d(u2_v2) == 0 && u2_u1.cross_2d(u2_v1) < 0.0
 		) {
-		//´ÓÍø¸ñ¶¥µãÉä³ö Á÷Ïß³öÉäµã=°ë±ß³öÉäµã
+		//ä»ç½‘æ ¼é¡¶ç‚¹å°„å‡º æµçº¿å‡ºå°„ç‚¹=åŠè¾¹å‡ºå°„ç‚¹
 		return 5;
 	}
 	if (v2_v1.cross_2d(v2_u1) == 0.0 && v2_v1.cross_2d(v2_u2) > 0.0
 		&& u2_u1.cross_2d(u2_v2) == 0.0 && u2_u1.cross_2d(u2_v1) > 0.0
 		) {
-		//´ÓÍø¸ñ¶¥µãÉä³ö Á÷Ïß³öÉäµã=°ë±ßÈëÉäµã
+		//ä»ç½‘æ ¼é¡¶ç‚¹å°„å‡º æµçº¿å‡ºå°„ç‚¹=åŠè¾¹å…¥å°„ç‚¹
 		return 6;
 	}
 	if (v2_v1.cross_2d(v2_u1) == 0.0 && v2_v1.cross_2d(v2_u2) < 0.0
 		&& u2_u1.cross_2d(u2_v1) == 0.0 && u2_u1.cross_2d(u2_v2) > 0.0) {
-		// Á÷ÏßÖÕµã=°ë±ßÖÕµã
+		// æµçº¿ç»ˆç‚¹=åŠè¾¹ç»ˆç‚¹
 		return 7;
 	}
 
 	if (v2_v1.cross_2d(v2_u1) > 0.0 && v2_v1.cross_2d(v2_u2) == 0.0
 		&& u2_u1.cross_2d(u2_v2) > 0.0 && u2_u1.cross_2d(u2_v1) == 0.0) {
-		// Á÷ÏßÖÕµã=°ë±ß³öÉäµã
+		// æµçº¿ç»ˆç‚¹=åŠè¾¹å‡ºå°„ç‚¹
 		return 8;
 	}
 
 	return -1;
 }
-//Ñ°ÕÒÈı¸öÕûÊıµÄÖĞÖµ
+//å¯»æ‰¾ä¸‰ä¸ªæ•´æ•°çš„ä¸­å€¼
 static int findMidToT(int s1, int s2, int s3) {
 	return s1 >= s2 ? (s2 >= s3 ? s2 : (s1 >= s3 ? s3 : s1)) : (s1 >= s3 ? s1 : (s2 >= s3 ? s3 : s2));
 }
-//Á÷ÏßµÄÑÓÉì
+//æµçº¿çš„å»¶ä¼¸
 SLPoint Mesh::StreamLinePoint(const SLPoint *startPos) {
 	SLPoint endPos;
 	Vec3 spp = startPos->pos;
@@ -1072,7 +1096,7 @@ SLPoint Mesh::StreamLinePoint(const SLPoint *startPos) {
 				}
 				curVEI1 = halfEdges[halfEdges[curVEI1]->frontI]->pairI;
 			} while (curVEI1 != veI && curVEI1 != -1);
-			//·½ÏòÕÒµ½£¬Ñ°ÕÒÏÂÒ»¸öµã
+			//æ–¹å‘æ‰¾åˆ°ï¼Œå¯»æ‰¾ä¸‹ä¸€ä¸ªç‚¹
 			if (startPosToV.norm() > interDim) {
 				int curVEI2 = veI;
 				do {
@@ -1117,7 +1141,7 @@ SLPoint Mesh::StreamLinePoint(const SLPoint *startPos) {
 			Vec3 startPosDirV = angleToNorm(pointAngle[2])*vvn[2] * ratio + angleToNorm(pointAngle[0])*vvn[0] * (1.0 - ratio);
 			double startPosDir = findAngleToAngle(spv.angleP(), startPosDirV.angleP());
 			Vec3 startPosDirVec = angleToNorm(startPosDir);
-			//È·¶¨ÏÂ¸öµãËùÔÚ±ß							
+			//ç¡®å®šä¸‹ä¸ªç‚¹æ‰€åœ¨è¾¹							
 			Vec3 auxPointV;
 			for (int i = 0; i < 4; i++) {
 				if (fabs(startPosToV[i] * startPosDirVec - 1.0) < 1.0e-8) {
@@ -1127,15 +1151,15 @@ SLPoint Mesh::StreamLinePoint(const SLPoint *startPos) {
 			}
 			int arrOrderErg[4][2] = { { 0,1 },{ 1,2 },{ 0,3 },{ 3,2 } };
 			if (auxPointV.norm() < interDim) {
-				Vec3 auxPoint;		//¸¨Öúµã	
+				Vec3 auxPoint;		//è¾…åŠ©ç‚¹	
 				double ratioxy;
 				for (int i = 0; i < 4; i++) {
 					int index1 = arrOrderErg[i][0];
 					int index2 = arrOrderErg[i][1];
 					if (calParToP(startPosToV[index1], startPosToV[index2], startPosDirVec)) {
-						//ÏÂ¸öµãÂäÔÚ¸ÃÌõ±ßÉÏ
+						//ä¸‹ä¸ªç‚¹è½åœ¨è¯¥æ¡è¾¹ä¸Š
 						calPoint(pv[index1], pv[index2], spp, startPosDirVec, auxPoint);
-						//ÔÚ´Ë´¦£¬Èç¹û¾«¶ÈµÍµ¼ÖÂµÄ³ö´í£¬ºÜ´ó¿ÉÄÜÊÇÁ÷Ïß¿ÉÄÜ¾­¹ı¶¥µãÁË
+						//åœ¨æ­¤å¤„ï¼Œå¦‚æœç²¾åº¦ä½å¯¼è‡´çš„å‡ºé”™ï¼Œå¾ˆå¤§å¯èƒ½æ˜¯æµçº¿å¯èƒ½ç»è¿‡é¡¶ç‚¹äº†
 						ratioxy = getRotate(pv[index1], pv[index2], auxPoint);
 						auxPointV = angleToNorm(pointAngle[index1])*vvn[index1] * (1.0 - ratioxy) + angleToNorm(pointAngle[index2])*vvn[index2] * ratioxy;
 						break;
@@ -1150,8 +1174,8 @@ SLPoint Mesh::StreamLinePoint(const SLPoint *startPos) {
 				//pointAngle4 = findAngleToAngle(startPos->vec.angle(), pointAngle4);
 				Vec3 startPosToV5 = auxPointV + startPosDirVec*startPosDirV.norm();
 				if (fabs(startPosToV5.norm()) > interDim) {
-					//È·¶¨ÏÂÒ»¸öµãÎ»ÖÃ
-					Vec3 finalPos;		//ÏÂÒ»¸öµã										
+					//ç¡®å®šä¸‹ä¸€ä¸ªç‚¹ä½ç½®
+					Vec3 finalPos;		//ä¸‹ä¸€ä¸ªç‚¹										
 					Vec3 startPosToV5N = startPosToV5.normalized();
 					for (int i = 0; i < 4; i++) {
 						if (fabs(startPosToV[i] * startPosToV5N - 1.0) < interDim) {
@@ -1163,25 +1187,25 @@ SLPoint Mesh::StreamLinePoint(const SLPoint *startPos) {
 						}
 					}
 					if (calParToP(startPosToV[0], startPosToV[1], startPosToV5N)) {
-						endPos.edgeI = halfEdges[speI]->nextI; //ÕÒµ½·´Ïò±ßµÄË÷Òı
+						endPos.edgeI = halfEdges[speI]->nextI; //æ‰¾åˆ°åå‘è¾¹çš„ç´¢å¼•
 						calPoint(pv[0], pv[1], spp, startPosToV5, finalPos);
-						//È·¶¨°ë±ß
+						//ç¡®å®šåŠè¾¹
 					}
 					else if (calParToP(startPosToV[2], startPosToV[1], startPosToV5N)) {
-						endPos.edgeI = halfEdges[halfEdges[speI]->nextI]->nextI; //ÕÒµ½·´Ïò±ßµÄË÷Òı
+						endPos.edgeI = halfEdges[halfEdges[speI]->nextI]->nextI; //æ‰¾åˆ°åå‘è¾¹çš„ç´¢å¼•
 						calPoint(pv[2], pv[1], spp, startPosToV5, finalPos);
 					}
 					else if (calParToP(startPosToV[0], startPosToV[3], startPosToV5N)) {
-						endPos.edgeI = halfEdges[halfEdges[halfEdges[speI]->pairI]->nextI]->nextI; //ÕÒµ½·´Ïò±ßµÄË÷Òı
+						endPos.edgeI = halfEdges[halfEdges[halfEdges[speI]->pairI]->nextI]->nextI; //æ‰¾åˆ°åå‘è¾¹çš„ç´¢å¼•
 						calPoint(pv[0], pv[3], spp, startPosToV5, finalPos);
-						//È·¶¨°ë±ß
+						//ç¡®å®šåŠè¾¹
 					}
 					else if (calParToP(startPosToV[2], startPosToV[3], startPosToV5N)) {
-						endPos.edgeI = halfEdges[halfEdges[speI]->pairI]->nextI; //ÕÒµ½·´Ïò±ßµÄË÷Òı
+						endPos.edgeI = halfEdges[halfEdges[speI]->pairI]->nextI; //æ‰¾åˆ°åå‘è¾¹çš„ç´¢å¼•
 						calPoint(pv[2], pv[3], spp, startPosToV5, finalPos);
 					}
 					else {
-						//³ö´í
+						//å‡ºé”™
 						return SLPoint();
 					}
 					endPos.pos = finalPos;
@@ -1189,7 +1213,7 @@ SLPoint Mesh::StreamLinePoint(const SLPoint *startPos) {
 					return endPos;
 				}
 				else {
-					//³ö´í
+					//å‡ºé”™
 					qDebug("being given");
 					return SLPoint();
 				}
@@ -1202,7 +1226,7 @@ SLPoint Mesh::StreamLinePoint(const SLPoint *startPos) {
 	}
 	return SLPoint();
 }
-//Á÷ÏßµÄ»ñµÃ
+//æµçº¿çš„è·å¾—
 bool Mesh::getStreamLine(int singularI, int streamLineI, const SLPoint *edgeP, int& slpcT) {
 	int streamLinePointCount = dirSL.size();
 	dirSL.push_back(SLPoint(dirSV[singularI]->pos, -2, dirSV[singularI]->vertI, edgeP->vec, streamLineI));
@@ -1225,7 +1249,7 @@ bool Mesh::getStreamLine(int singularI, int streamLineI, const SLPoint *edgeP, i
 		bool isEnd = false;
 #if 1
 		for (int j = 0; j < dirSV.size(); j++) {
-			//½áÊøÌõ¼ş£ºµ±Á÷Ïß½øÈëÈÎÒâÆæµãÁìÓò½ÔÎªÖÕÖ¹¡£×¢Òâ£¬´ËÊ±»¹²»´æÔÚfaceI==-3µÄÆæµã
+			//ç»“æŸæ¡ä»¶ï¼šå½“æµçº¿è¿›å…¥ä»»æ„å¥‡ç‚¹é¢†åŸŸçš†ä¸ºç»ˆæ­¢ã€‚æ³¨æ„ï¼Œæ­¤æ—¶è¿˜ä¸å­˜åœ¨faceI==-3çš„å¥‡ç‚¹
 			//if (dirSV[j]->faceI >= -1) {			
 			if (nextPoint.edgeI >= 0) {
 				int hnepI = halfEdges[nextPoint.edgeI]->pairI;
@@ -1254,7 +1278,7 @@ bool Mesh::getStreamLine(int singularI, int streamLineI, const SLPoint *edgeP, i
 			}
 			if (isEnd) {
 				isEnd = false;
-				//¸ÃÁ÷Ïß½øÈëÁíÒ»¸öÆæµã£¬²»´æ´¢¾­¹ıµÄÃæ£¨ÓĞµãÀÁ£©						
+				//è¯¥æµçº¿è¿›å…¥å¦ä¸€ä¸ªå¥‡ç‚¹ï¼Œä¸å­˜å‚¨ç»è¿‡çš„é¢ï¼ˆæœ‰ç‚¹æ‡’ï¼‰						
 				if (dirSV[j]->svt == singularType::SV_THR || dirSV[j]->svt == singularType::SV_FIV) {
 					isEnd = true;
 				}
@@ -1339,7 +1363,7 @@ bool Mesh::getStreamLine(int singularI, int streamLineI, const SLPoint *edgeP, i
 		}
 	}
 	if (nextPoint.vertI == -1 && halfEdges[nextPoint.edgeI]->pairI == -1) {
-		//µ±Á÷ÏßÓë±ß½çÏà½»£¬ÇÒ²»ÔÚ¶ËµãÉÏ
+		//å½“æµçº¿ä¸è¾¹ç•Œç›¸äº¤ï¼Œä¸”ä¸åœ¨ç«¯ç‚¹ä¸Š
 		nextPoint.slI = streamLineI;
 		dirSL.push_back(nextPoint);
 		//add 18.5.15
@@ -1425,7 +1449,7 @@ void Mesh::getBorderSingular(int edgeI) {
 		}
 	} while (true);
 	if (fabs(rotateAngle - Q_PI) > Q_PI / 9.0) {
-		//¾ÀÕı·½Ïò³¡		
+		//çº æ­£æ–¹å‘åœº		
 		int hcvI = halfEdges[curEdgeI]->vertI;
 		if (fixBAngle(hcvI)) {
 			halfVerts[hcvI]->vec = halfVerts[hcvI]->vec *-1.0;
@@ -1461,9 +1485,9 @@ void Mesh::getBorderSingular(int edgeI) {
 			}
 		}
 	}
-	halfVerts[halfEdges[curEdgeI]->vertI]->edgeI = edgeI;//Ê¹±ß½çµã±£´æ±ß½ç±ß
+	halfVerts[halfEdges[curEdgeI]->vertI]->edgeI = edgeI;//ä½¿è¾¹ç•Œç‚¹ä¿å­˜è¾¹ç•Œè¾¹
 }
-//Ò»²ãÁìÓòµü´ú
+//ä¸€å±‚é¢†åŸŸè¿­ä»£
 void Mesh::aloa() {
 	if (vert.size() > 0) {
 		int aloaSC = dirBVEdgeIndex.size();
@@ -1497,7 +1521,7 @@ void Mesh::aloa() {
 						int curStartEI1 = startEI1;
 						int startEI2 = halfEdges[halfEdges[startEI1]->nextI]->nextI;
 						if (layerS > 1) {
-							//µÚÒ»²ãÁíÍâ´¦Àí
+							//ç¬¬ä¸€å±‚å¦å¤–å¤„ç†
 							while (startEI1 != -1) {
 								int curHSN = halfEdges[startEI1]->nextI;
 								int hcvI = halfEdges[curHSN]->vertI;
@@ -1558,7 +1582,7 @@ void Mesh::aloa() {
 		isGenALOA = false;
 	}
 }
-//±êÁ¿³¡
+//æ ‡é‡åœº
 void Mesh::scalarFiled() {
 	if (vert.size() > 0) {
 		double disV = maxPointValue - minPointValue;
@@ -1573,7 +1597,7 @@ void Mesh::scalarFiled() {
 		isGenScalarField = false;
 	}
 }
-//Éú³É½»²æ³¡
+//ç”Ÿæˆäº¤å‰åœº
 void Mesh::acrossField() {
 	acrossF.clear();
 	if (vert.size() > 0) {
@@ -1585,8 +1609,8 @@ void Mesh::acrossField() {
 				//double disVp = (vPos1 - vPos2).norm() / 3.0;
 				double angle1 = halfVerts[i]->vec.angleP() / 4.0;
 				double angle2 = fabs(angle1 > 3.0*Q_PI / 2.0 ? angle1 - 3.0*Q_PI / 2.0 : angle1 + Q_PI / 2.0);
-				Vec3 vn1 = angleToNorm(angle1)*disVp;
-				Vec3 vn2 = angleToNorm(angle2)*disVp;
+				Vec3 vn1 = angleToNorm(angle1)*0.09;//disVp;
+				Vec3 vn2 = angleToNorm(angle2)*0.09;//disVp;
 				acrossF.push_back(vn1 + vPos2);
 				acrossF.push_back(vn1*(-1.0) + vPos2);
 				acrossF.push_back(vn2 + vPos2);
@@ -1599,23 +1623,24 @@ void Mesh::acrossField() {
 		isGenAcrossField = false;
 	}
 }
-//·½Ïò³¡
+//æ–¹å‘åœº
 void Mesh::directField() {
 	directF.clear();
 	directHandleF.clear();
 	if (vert.size() > 0) {
 		for (int i = 0; i < vert.size(); i++) {
+
 			if (abs(halfVerts[i]->aloaN) % dirLayNum == 0 && i % dirlpD == 0) {
-				Vec3 vPos2 = halfVerts[i]->pos;
-				Vec3 vn1 = halfVerts[i]->vec*dirBSize;// .normalized();
-				double vn1n = vn1.norm();
+				Vec3 vPos2 = halfVerts[i]->pos;//åŸç‚¹
+				Vec3 vn1 = halfVerts[i]->vec/**dirBSize*/;// .normalized();
+				double vn1n = 0.3;// vn1.norm();
 				double vnf = halfVerts[i]->vec.angleP();
 				Vec3 vn2 = angleToNorm(vnf > 3.0*Q_PI / 2.0 ? vnf - 3.0*Q_PI / 2.0 : vnf + Q_PI / 2.0);
 				Vec3 vn3 = (vn1.normalized() + vn2).normalized();
 				Vec3 vn4 = (vn1.normalized() - vn2).normalized();
 				Vec3 endP = vn1 + vPos2;
-				directF.push_back((vn3*0.7071*vn1n + vPos2)*dirHSize + endP*(1.0 - dirHSize));
-				directF.push_back((vn4*0.7071*vn1n + vPos2)*dirHSize + endP*(1.0 - dirHSize));
+				directF.push_back((vn3*0.7071*vn1n + vPos2)*0.1/*dirHSize*/ + endP*(1.0 - 0.1));
+				directF.push_back((vn4*0.7071*vn1n + vPos2)*0.1/*dirHSize*/ + endP*(1.0 - 0.1));
 				directF.push_back(endP);
 				directHandleF.push_back(vPos2);
 				directHandleF.push_back(endP);
@@ -1627,7 +1652,7 @@ void Mesh::directField() {
 		isGenDirectField = false;
 	}
 }
-//½¨Á¢¾ØĞÎÇøÓò¼°Ó¦ÓÃ
+//å»ºç«‹çŸ©å½¢åŒºåŸŸåŠåº”ç”¨
 void Mesh::getDFSL() {
 	int col = (this->maxPos[0] - this->minPos[0]) / this->getDisQuaSize() + 3;
 	int row = (this->maxPos[1] - this->minPos[1]) / this->getDisQuaSize() + 3;
@@ -1793,7 +1818,7 @@ void Mesh::remarkPSF(SLPoint* skp, int slI) {
 	}
 #endif
 }
-//²»ÓÃ¼ò»¯µÄÁ÷Ïß
+//ä¸ç”¨ç®€åŒ–çš„æµçº¿
 void Mesh::reduceOSL(int slI, int& slPI) {
 	if (SLS[slI]->endSingularIndex < 0) {
 		int newSlSpI = slPI;
@@ -1827,14 +1852,14 @@ void Mesh::reduceOSL(int slI, int& slPI) {
 			if (dirSV[si]->streamLines[j] == slI) {
 				dirSV[si]->streamLines[j] = SLSimplify.size() - 1;
 				break;
-				//´Ë´¦Ò»¸öĞ¡¼¼ÇÉ£¬¸Ä±äµÄÁ÷ÏßĞÅÏ¢¿ÉÄÜ²»ÊÇÎªĞèÒªĞŞ¸ÄµÄ
-				//ÓÉÓÚĞŞ¸ÄÁ÷ÏßË÷Òıºó£¬ÔÚºóĞø²éÑ¯ÖĞ¿ÉÄÜ»á²úÉú³åÍ»£¬µ«ÕâÑù´¦Àí¿ÉÒÔ¹æ±Ü
+				//æ­¤å¤„ä¸€ä¸ªå°æŠ€å·§ï¼Œæ”¹å˜çš„æµçº¿ä¿¡æ¯å¯èƒ½ä¸æ˜¯ä¸ºéœ€è¦ä¿®æ”¹çš„
+				//ç”±äºä¿®æ”¹æµçº¿ç´¢å¼•åï¼Œåœ¨åç»­æŸ¥è¯¢ä¸­å¯èƒ½ä¼šäº§ç”Ÿå†²çªï¼Œä½†è¿™æ ·å¤„ç†å¯ä»¥è§„é¿
 			}
 		}
 		slPI++;
 	}
 }
-//¸ø¶¨µÄÁ½ÌõÁ÷Ïß±ØĞë·ûºÏÇé¿ö£¬ÓÉ·½·¨auxReduceSL¸ø³ö
+//ç»™å®šçš„ä¸¤æ¡æµçº¿å¿…é¡»ç¬¦åˆæƒ…å†µï¼Œç”±æ–¹æ³•auxReduceSLç»™å‡º
 void Mesh::reduceSL(int slI1, int slI2, int& slPI) {
 	SLS[slI1]->isShow = false;
 	SLS[slI2]->isShow = false;
@@ -1851,7 +1876,7 @@ void Mesh::reduceSL(int slI1, int slI2, int& slPI) {
 	int endSLPI = 0;
 	int endSLPIT = 0;
 	int slsSVI = SLS[slI1]->startSingularIndex;
-	//»ùÓÚ¸ø¶¨µÄÁ½ÌõÁ÷ÏßÄÜ¹»ÊµÏÖ¼ò»¯µÄÇé¿öÏÂ
+	//åŸºäºç»™å®šçš„ä¸¤æ¡æµçº¿èƒ½å¤Ÿå®ç°ç®€åŒ–çš„æƒ…å†µä¸‹
 	if (SLS[slI1]->startSingularIndex == SLS[slI2]->startSingularIndex) {
 		if (SLS[slI1]->endSingularIndex == SLS[slI2]->endSingularIndex && SLS[slI1]->endSingularIndex != -1) {
 			endSLPI = SLS[slI1]->endSLPointIndex;
@@ -1926,10 +1951,10 @@ void Mesh::reduceSL(int slI1, int slI2, int& slPI) {
 		Vec3 newPv = dirSL[auxSLp2].pos*(1.0 - ttemp) + dirSL[auxSLp2 + 1].pos*ttemp;
 		showSSLS.push_back(PCPoint(dirSL[i].pos*(1.0 - paras) + newPv*paras, slArrayColor[colI % 24]));
 	}
-	//×îºóÒ»¸öµãÖ±½Ó´æ´¢
+	//æœ€åä¸€ä¸ªç‚¹ç›´æ¥å­˜å‚¨
 	showSSLS.push_back(PCPoint(dirSL[SLS[slI2]->startSLPointIndex].pos, slArrayColor[colI % 24]));
 	for (int j = SLS[slI1]->startSLPointIndex; j <= SLS[slI1]->endSLPointIndex; j++) {
-		remarkPSF(&dirSL[j], SLSimplify.size());//¼ÇÂ¼Á÷µãËùÔÚÈı½ÇĞÎµÄ´óÖÂÎ»ÖÃ
+		remarkPSF(&dirSL[j], SLSimplify.size());//è®°å½•æµç‚¹æ‰€åœ¨ä¸‰è§’å½¢çš„å¤§è‡´ä½ç½®
 	}
 	for (int k = SLS[slI2]->startSLPointIndex; k <= SLS[slI2]->endSLPointIndex; k++) {
 		remarkPSF(&dirSL[k], SLSimplify.size());
@@ -1977,7 +2002,7 @@ int Mesh::getSLIFsvIToslI(int svI, int slI, int tsvI, Vec3 pd) {
 	}
 	return selSLI;
 }
-//¼ÆËãÆæµãsvIµ½Á÷ÏßslI×î½üµÄÁ÷µã£¨slI£©
+//è®¡ç®—å¥‡ç‚¹svIåˆ°æµçº¿slIæœ€è¿‘çš„æµç‚¹ï¼ˆslIï¼‰
 int Mesh::getPIFsvIToslI(Vec3 pos, int slI) {
 	double disT = 1.0e9;
 	int slPcI = -1;
@@ -1990,7 +2015,7 @@ int Mesh::getPIFsvIToslI(Vec3 pos, int slI) {
 	}
 	return slPcI - SLS[slI]->startSLPointIndex;
 }
-//ÕÒ³öÆæµã´¦·ûºÏÌõ¼şµÄÁ÷ÏßË÷Òı
+//æ‰¾å‡ºå¥‡ç‚¹å¤„ç¬¦åˆæ¡ä»¶çš„æµçº¿ç´¢å¼•
 int Mesh::getSLIFsvv(int svI, Vec3 vec) {
 	int reV = -1;
 	if (svI >= 0 && svI<dirSV.size() && vec.norm() > interDim) {
@@ -2008,8 +2033,8 @@ int Mesh::getSLIFsvv(int svI, Vec3 vec) {
 	}
 	return reV;
 }
-//´¦Àí´ò×ªÎÊÌâ
-//ÊäÈëÁ÷ÏßË÷Òı¡£Êä³ö¸ÃÁ÷ÏßÉÏÁ÷ÏßµãµÄË÷Òı
+//å¤„ç†æ‰“è½¬é—®é¢˜
+//è¾“å…¥æµçº¿ç´¢å¼•ã€‚è¾“å‡ºè¯¥æµçº¿ä¸Šæµçº¿ç‚¹çš„ç´¢å¼•
 void Mesh::getPIFsvIToslI(int slI, int reSLI[]) {
 	int ospI = SLS[slI]->startSLPointIndex;
 	int svI = SLS[slI]->startSingularIndex;
@@ -2085,7 +2110,7 @@ bool Mesh::ReMatchFit(int slI1, int slI2, double spec) {
 		(dirSL[slsp2 + 1].pos - dirSL[slsp2].pos).normalized() *(dirSL[slep1 - 1].pos - dirSL[slep1].pos).normalized() > 0.0) ||
 			(SLS[slI1]->startSingularIndex == SLS[slI2]->endSingularIndex || SLS[slI1]->endSingularIndex == SLS[slI2]->startSingularIndex)));
 }
-//ÅĞ¶ÏÓÉÏàËÆ¶È¸ø³öµÄÁ÷ÏßÊÇ·ñ·ûºÏÌõ¼ş
+//åˆ¤æ–­ç”±ç›¸ä¼¼åº¦ç»™å‡ºçš„æµçº¿æ˜¯å¦ç¬¦åˆæ¡ä»¶
 int Mesh::MatchFit(int slI1, int slI2) {
 	int si[2] = { SLS[slI2]->startSingularIndex ,SLS[slI2]->endSingularIndex };
 	for (int j = 0; j < 2; j++) {
@@ -2154,7 +2179,7 @@ void Mesh::auxReduceSL(int slI, int& slPI) {
 				reSL[i] = act;
 			}
 			else if (act == 0) {
-				//´Ë´¦¿¼ÂÇµÄÏà½üÁ÷ÏßÊÇ¸ÃÁ÷ÏßµÄÆğÊ¼µãÔÚ±»ÕÒÁ÷ÏßÖĞÕÒµ½Ïà½üµãµÄ						
+				//æ­¤å¤„è€ƒè™‘çš„ç›¸è¿‘æµçº¿æ˜¯è¯¥æµçº¿çš„èµ·å§‹ç‚¹åœ¨è¢«æ‰¾æµçº¿ä¸­æ‰¾åˆ°ç›¸è¿‘ç‚¹çš„						
 				if (ReMatchFit(slI, i, 1.0)) {
 					reSL[i] = act;
 				}
@@ -2189,8 +2214,8 @@ void Mesh::auxReduceSL(int slI, int& slPI) {
 		reduceSL(slI, minIndex, slPI);
 	}
 }
-//Ñ°ÕÒ´óÖÂËÄ±ßÇøÓò±ß½ç£¨Ò»ÀàÇúÏß£©
-//ÔÚÁ÷ÏßÎ²ÆæµãÑÓÉì³öµÄÎåÌõÁ÷ÏßÖĞ£¬Ñ°ÕÒÓë¸ÃÁ÷ÏßÏàËÆµÄÄÇÌõ
+//å¯»æ‰¾å¤§è‡´å››è¾¹åŒºåŸŸè¾¹ç•Œï¼ˆä¸€ç±»æ›²çº¿ï¼‰
+//åœ¨æµçº¿å°¾å¥‡ç‚¹å»¶ä¼¸å‡ºçš„äº”æ¡æµçº¿ä¸­ï¼Œå¯»æ‰¾ä¸è¯¥æµçº¿ç›¸ä¼¼çš„é‚£æ¡
 int Mesh::auxJudgeRSLI(int slI) {
 	int svI = SLS[slI]->endSingularIndex;
 	if (svI < 0)
@@ -2231,8 +2256,8 @@ bool Mesh::judgeQuaDomainSL(int v1, int v2, int v3, int v4, Vec3 poss[]) {
 	}
 	return false;
 }
-//Ææµã¸½½üÁ÷ÏßÅĞ¶Ï
-//Ç°ÌáÌõ¼ş£ºÆæµãÖĞ´æÔÚÁ÷Ïß¸ü¹»ÓëÁ÷ÏßslI½øĞĞ¼ò»¯
+//å¥‡ç‚¹é™„è¿‘æµçº¿åˆ¤æ–­
+//å‰ææ¡ä»¶ï¼šå¥‡ç‚¹ä¸­å­˜åœ¨æµçº¿æ›´å¤Ÿä¸æµçº¿slIè¿›è¡Œç®€åŒ–
 bool Mesh::auxRSLSVLToFSLI(int slI1, int slI2) {
 	if (slI1 >= 0 && slI1 < SLS.size() && slI2 >= 0 && slI2 < SLS.size()) {
 		int opI = getPIFsvIToslI(dirSV[SLS[slI1]->startSingularIndex]->pos, slI2) + SLS[slI2]->startSLPointIndex;
@@ -2384,7 +2409,7 @@ void Mesh::auxReduceSLID(std::set<int>& slArray, int ci) {
 				Vec3 pts = dirSL[SLS[*itert]->startSLPointIndex].pos;
 				int disVpc;
 				if (SLS[*itert]->startSingularIndex == SLS[*itert]->endSingularIndex && SLS[*itert]->startSingularIndex == SLS[*iter]->startSingularIndex) {
-					disVpc = SLS[*iter]->endSLPointIndex;	//ÎŞÄÎÖ®¾Ù
+					disVpc = SLS[*iter]->endSLPointIndex;	//æ— å¥ˆä¹‹ä¸¾
 				}
 				else {
 					disVpc = getPIFsvIToslI(pts, *iter) + SLS[*iter]->startSLPointIndex;
@@ -2569,7 +2594,7 @@ void Mesh::auxReduceSLI(int slI, std::set<int>& slArray) {
 														titerSLArray.insert(mai);
 														isCon = true;
 														maj = true;
-														//maSLI = mai;	//²»ĞèÒªĞŞ¸Ä
+														//maSLI = mai;	//ä¸éœ€è¦ä¿®æ”¹
 														break;
 													}
 												}
@@ -2638,7 +2663,7 @@ void Mesh::auxReduceSLI(int slI, std::set<int>& slArray) {
 			}
 			else if (evI == svI) {
 				int aslI = auxJudgeRSLI(*iter1);
-				//´Ë´¦ÊôÓÚ×Ô½»×´Ì¬
+				//æ­¤å¤„å±äºè‡ªäº¤çŠ¶æ€
 			}
 		}
 		iterSLArray.insert(titerSLArray.begin(), titerSLArray.end());
@@ -2653,7 +2678,7 @@ void Mesh::auxReduceSLI(int slI, std::set<int>& slArray) {
 	slArray.clear();
 	slArray.insert(iterSLArray.begin(), iterSLArray.end());
 }
-//ÅĞ¶ÏÁ½ÌõÁ÷ÏßÊÇ·ñÎ±¹²Ïß
+//åˆ¤æ–­ä¸¤æ¡æµçº¿æ˜¯å¦ä¼ªå…±çº¿
 int Mesh::JudgeComDirSL(int slI1, int slI2) {
 	double dim = 0.866;
 	Vec3 nj[2], njh[2];
@@ -2690,14 +2715,14 @@ int Mesh::JudgeComDirSL(int slI1, int slI2) {
 					}
 					area2 += dirSL[endI].pos.Outer_product(dirSL[SLS[slI2]->startSLPointIndex].pos);
 					if (area1*area2 < 0.0) {
-						//´Ë´¦Ê¹ÓÃÒ»°ëµÄÃæ»ı×÷ÎªÀà¼«Öµ
+						//æ­¤å¤„ä½¿ç”¨ä¸€åŠçš„é¢ç§¯ä½œä¸ºç±»æå€¼
 						if (fabs(area1 + area2) < fabs(area1) / 2.0 && fabs(area1 + area2) < fabs(area2) / 2.0) {
 							return 1;
 						}
 					}
 				}
 			}
-			//Á½½áÊø¶ËµãÔÚÆäËû´¦
+			//ä¸¤ç»“æŸç«¯ç‚¹åœ¨å…¶ä»–å¤„
 			return -1;
 		}
 	}
@@ -2800,8 +2825,8 @@ void Mesh::ReduceSLToArrayClear() {
 	selectClear();
 	selectSLPI = 0;
 }
-//²ÎÊı¼ÇÂ¼¶ÔÓ¦Á÷Ïß¼ò»¯¶ÔÏó£¨anyone£©
-//¸üĞÂÁ÷Ïß²ÎÊıreduceObjSLI
+//å‚æ•°è®°å½•å¯¹åº”æµçº¿ç®€åŒ–å¯¹è±¡ï¼ˆanyoneï¼‰
+//æ›´æ–°æµçº¿å‚æ•°reduceObjSLI
 void Mesh::ReduceSLToArrayI() {
 	ReduceSLToArrayClear();
 	int slPI = 0;
@@ -2820,14 +2845,14 @@ void Mesh::ReduceSLToArrayI() {
 void Mesh::ReduceSLToArray() {
 	ReduceSLToArrayClear();
 	int slPI = 0;
-	//½øĞĞÁ½´Î±éÀú£º´æÔÚµÚÒ»´Î±éÀúÎŞ·¨È·¶¨µÄÇé¿ö	
-	//µ¥Á÷£¨´æÔÚ¼ä½Óµ¥Á÷£©
+	//è¿›è¡Œä¸¤æ¬¡éå†ï¼šå­˜åœ¨ç¬¬ä¸€æ¬¡éå†æ— æ³•ç¡®å®šçš„æƒ…å†µ	
+	//å•æµï¼ˆå­˜åœ¨é—´æ¥å•æµï¼‰
 	for (int i = 0; i < SLS.size(); i++) {
 		if (SLS[i]->isShow) {
 			auxReduceSL(i, slPI);
 		}
 	}
-	//»¥²»Á÷
+	//äº’ä¸æµ
 	for (int i = 0; i < SLS.size(); i++) {
 		if (SLS[i]->isShow && SLS[i]->endSingularIndex != -1) {
 			auxReReduceSL(i, slPI);
@@ -2915,7 +2940,7 @@ void Mesh::findSL() {
 			genSL = false;
 			return;
 		}
-		//ÈôÎÊÌâÓòÖĞÃ»ÓĞÆæµã£¬Îª²»±¨´í£¬ÔÙ´Ë´¦Ìí¼ÓÒ»¸öĞéÆæµã
+		//è‹¥é—®é¢˜åŸŸä¸­æ²¡æœ‰å¥‡ç‚¹ï¼Œä¸ºä¸æŠ¥é”™ï¼Œå†æ­¤å¤„æ·»åŠ ä¸€ä¸ªè™šå¥‡ç‚¹
 		if (dirSV.size() == 0) {
 			dirSV.push_back(new Singular());
 		}
@@ -2967,7 +2992,7 @@ void Mesh::StreamLineClear() {
 }
 void Mesh::getStreamLines() {
 	StreamLineClear();
-#pragma region Á÷Ïß			
+#pragma region æµçº¿			
 	for (int i = 0; i < dirSV.size(); i++) {
 		if (dirSV[i]->slc > 0) {
 			double bgsvS = 0.0;
@@ -3004,10 +3029,10 @@ void Mesh::getStreamLines() {
 		}
 	}
 	isGenStreamLine = true;
-#pragma region 18.5.15 ±ß½çÇúÏß
+#pragma region 18.5.15 è¾¹ç•Œæ›²çº¿
 	for (auto iter1 = BECI.begin(); iter1 != BECI.end(); ++iter1) {
 		if (iter1->second.count < 3) {
-			//ÕâÀïËÆºõÖ»ÄÜÊÇ0»ò´óÓÚµÈÓÚ3
+			//è¿™é‡Œä¼¼ä¹åªèƒ½æ˜¯0æˆ–å¤§äºç­‰äº3
 			for (int i = 0; i < 3; i++) {
 				if (iter1->second.vI[i] >= 0) {
 					createBESV(iter1->second.vI[i]);
@@ -3017,7 +3042,7 @@ void Mesh::getStreamLines() {
 	}
 	std::map<int, std::map<int, std::map<int, pdStr>>>().swap(osf);
 #pragma endregion
-#pragma region ¶ÔÁ÷Ïß½øĞĞ·ÖÀà¼°¼ò»¯¶ÔÏóµÄÖ¸¶¨
+#pragma region å¯¹æµçº¿è¿›è¡Œåˆ†ç±»åŠç®€åŒ–å¯¹è±¡çš„æŒ‡å®š
 	int j = 1;
 	for (int i = 0; i < SLS.size(); i++) {
 		if (SLS[i]->isN && SLS[i]->isShow) {
@@ -3041,7 +3066,7 @@ void Mesh::getStreamLines() {
 		}
 	}
 #pragma endregion
-#pragma region 18.6.14 ¸´ÖÆÒ»·İÆæµã
+#pragma region 18.6.14 å¤åˆ¶ä¸€ä»½å¥‡ç‚¹
 	auxDirSV.clear();
 	for (auto iter = auxDirSV.begin(); iter != auxDirSV.end();) {
 		delete *iter;
@@ -3091,7 +3116,7 @@ void Mesh::createBESV(int vI) {
 	singular->bFaceI.push_back(halfEdges[halfVerts[vI]->edgeI]->faceI);
 	singular->bFaceI.push_back(halfEdges[halfVerts[getBFrontPTodNextPI(vI)]->edgeI]->faceI);
 	singular->streamLines[0] = slI;
-	//³õÊ¼µãµÄ»ñµÃ
+	//åˆå§‹ç‚¹çš„è·å¾—
 	int gifEI = getBFrontPTodNextPI(vI);
 	Vec3 hgifP = halfVerts[gifEI]->pos;
 	Vec3 hhhifevP = halfVerts[halfEdges[halfVerts[vI]->edgeI]->vertI]->pos;
@@ -3099,7 +3124,7 @@ void Mesh::createBESV(int vI) {
 	double dir_judgment = hhaA > 3.0*Q_PI / 2.0 ? hhaA - 3.0*Q_PI / 2.0 : hhaA + Q_PI / 2.0;
 	Vec3 nnn = ((hifP - hhhifevP).normalized() + (hifP - hgifP).normalized()).normalized();
 	nnn = angleToNorm(dir_judgment)*nnn > 0.0 ? nnn : nnn*-1.0;
-	//½¨Á¢Ò»¸ö³õÊ¼Á÷µã	
+	//å»ºç«‹ä¸€ä¸ªåˆå§‹æµç‚¹	
 	SLPoint  ePoint;
 	int cur_EI = halfVerts[gifEI]->edgeI;
 	do {
@@ -3183,13 +3208,582 @@ int Mesh::getSelectSLI(Vec3 pos, int& selI) {
 	return selSLI;
 }
 
+void Mesh::constructBorders()
+{
+	int c = 0;
+	double d = 0.0;
+	for (int i = 0; i < normalVertices.size(); ++i) {
+		if (halfVerts[i]->isBoundary) {
+			//Vec3 tv = angleToNorm(halfVerts[i]->vec.angleP() / 4.)*halfVerts[i]->vec.norm();
+			BorderVertex *bv=new BorderVertex();
+			//bv->frameVector = tv;
+			bv->id = i;
+			bv->vertexId = i;
+			bv->pos = normalVertices[i].pos;
+            HE_edge he = *halfEdges[halfVerts[i]->edgeI];
+			
+			int pi = he.pairI;
+			Vec3 pos_t;
+			if (pi != -1) {
+				int next_i = halfEdges[pi]->nextI;
+				pi = halfEdges[next_i]->pairI;
+				while (pi!=-1) {
+					next_i = halfEdges[pi]->nextI;
+					pi = halfEdges[next_i]->pairI;
+                    
+				}
+				bv->nextId= halfEdges[next_i]->vertI;
+				int prev_i= he.nextI;
+				pi = halfEdges[halfEdges[prev_i]->nextI]->pairI;
+				while (pi != -1) {
+					prev_i = halfEdges[pi]->nextI;
+					pi = halfEdges[ halfEdges[prev_i]->nextI]->pairI;
+				}
+				bv->prevId= halfEdges[prev_i]->vertI;
+				pos_t = normalVertices[halfEdges[prev_i]->vertI].pos;
+			}
+			else { 
+				bv->nextId = he.vertI;
+				int pair_i = halfEdges[he .frontI]->pairI;
+				int front_i= he.frontI;
+				while (pair_i != -1) {
+					front_i = halfEdges[pair_i]->frontI;
+					pair_i = halfEdges[front_i]->pairI;
+					
+				}
+				bv->prevId= halfEdges[halfEdges[front_i]->frontI]->vertI;
+				pos_t = normalVertices[halfEdges[halfEdges[front_i]->frontI]->vertI].pos;
+			}
+			d+=bv->pos.cptEuclideanDistance(pos_t);
+			c++;
+			borders.push_back(bv);
+		}
+	}
+	avgBorderSegLength = d / c;
+}
+
+void Mesh::constructNormalVtx()
+{
+	double max_fabs = 0.0;
+	for (int i = 0; i < vert.size(); ++i) {
+		if (max_fabs < fabs(vert[i].pos[0])) {
+			max_fabs = fabs(vert[i].pos[0]);
+		}
+		if (max_fabs < fabs(vert[i].pos[1])) {
+			max_fabs = fabs(vert[i].pos[1]);
+		}
+	}
+	if (max_fabs == 0.0) return;
+	double rate = 1.000000/ max_fabs;
+	
+	for (int i = 0; i < vert.size(); i++) {
+		NormalVtx vtx_tmp;
+		vtx_tmp.id = i;
+		vtx_tmp.normalizeRate = rate;
+		vtx_tmp.pos = vert[i].pos*rate;
+	
+		normalVertices.push_back(vtx_tmp);
+	}
+}
+
+void Mesh::Curve_Reconstruction()
+{
+	TPC=TriplelinePointsetClass(&PointCloud);
+	TPC.process_TriplelinePointset();
+}
+
+void Mesh::outputIntersection(QString path)
+{
+	/*default_random_engine dre;
+	uniform_int_distribution<unsigned> u1(0, intersections.size()-1);
+	uniform_int_distribution<unsigned> u2(0, pointsOutOfScope.size()-1);
+	vector<int> out_true;
+	vector<int> out_false;
+	int c = 0;
+	if (intersections.size() >= 1024)
+		c = 1024;
+	else c = intersections.size();
+
+	while(c){
+		if (!intersections[u1(dre)].flag) {
+			intersections[u1(dre)].flag=true;
+			out_true.push_back(u1(dre));
+			c--;
+		}
+	}
+	if (pointsOutOfScope.size() >= 1024)
+		c = 1024;
+	else c = pointsOutOfScope.size();
+	while (c) {
+		if (!pointsOutOfScope[u2(dre)].flag) {
+			pointsOutOfScope[u2(dre)].flag = true;
+			out_false.push_back(u2(dre));
+			c--;
+		}
+	}*/
+	QFile fp(path);
+	if (!fp.open(QIODevice::WriteOnly | QIODevice::Text)) {
+		QMessageBox::warning(NULL, "warning", "can't open output(gm2) file!", QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+		return;
+	}
+	QTextStream stream(&fp);
+	int num1 = intersections.size();
+	int num2 = pointsOutOfScope.size();
+	int num3 = 0;
+	num2 > num1 ? num3 = num2 : num3 = num1;
+	
+	for (int i = 0; i <num3; ++i) {
+	
+		if (i < num1) {
+			Vec3 bp = intersections[i].minDistBorderVertexPos;
+			Vec3 sp =intersections[i].minDistSingularityPos;
+			stream << fixed<<qSetRealNumberPrecision(6)<< intersections[i].pos.v[0] << " " << intersections[i].pos.v[1] << " " << intersections[i].pos.v[2] << " "
+				<< intersections[i].pos.cptEuclideanDistance(bp) << " "
+				<< intersections[i].pos.cptEuclideanDistance(sp) << " "
+				<< intersections[i].tag << endl;
+		}
+		if (i < num2) {
+			Vec3 bp = pointsOutOfScope[i].minDistBorderVertexPos;
+			Vec3 sp = pointsOutOfScope[i].minDistSingularityPos;
+			stream << fixed << qSetRealNumberPrecision(6) << pointsOutOfScope[i].pos.v[0] << " " << pointsOutOfScope[i].pos.v[1] << " " << pointsOutOfScope[i].pos.v[2] << " "
+				<< pointsOutOfScope[i].pos.cptEuclideanDistance(bp) << " "
+				<< pointsOutOfScope[i].pos.cptEuclideanDistance(sp) << " "
+				<< pointsOutOfScope[i].tag << endl;
+		}
+	}
+}
+
+void Mesh::shootRayFromSingularity()
+{
+	for (int i = 0; i < dirSV.size(); ++i) {
+		if (dirSV[i]->slc <= 0) continue;
+		Vec3 sv_point = dirSV[i]->pos;
+		
+		for (int j = 0; j < 5; ++j) {
+			
+			Vec3 v1_start_point= sv_point;
+			Vec3 v1_end_point = dirSV[i]->dir[j].vec + v1_start_point;
+			Vec3 v1 = v1_end_point - v1_start_point;
+			Vec3 v2_start_point,v2_end_point,v2;
+			BorderVertex *bv=borderHead;
+
+			for (int k = 1; k < borders.size(); ++k) {
+				v2_start_point = vert[borders[k - 1]->vertexId].pos;
+				v2_end_point = vert[borders[k]->vertexId].pos ;
+				v2 = v2_end_point - v2_start_point;
+				if (getLineSegmentIntersectionType(v1_start_point,v1_end_point, v2_start_point, v2_end_point)!=-1) {
+					if (fabs(borders[k]->frameVector.cptAngleBtwVec(v1) - 90) <= 5
+						|| fabs(borders[k]->frameVector.cptAngleBtwVec(v1) - 180) <= 5
+						|| borders[k]->frameVector.cptAngleBtwVec(v1) <= 5) {
+
+						Vec3 unit_v2=v2/v2.norm();
+						double v_dot1 = (v1_start_point-v2_start_point)*unit_v2;
+						Vec3 proj_point1=vert[borders[k - 1]->vertexId].pos + unit_v2*v_dot1;
+                        double d1 = proj_point1.cptEuclideanDistance(v1_start_point);
+
+						double v_dot2 = (v1_end_point- v2_start_point)*unit_v2;
+						Vec3 proj_point2 = vert[borders[k - 1]->vertexId].pos + unit_v2*v_dot2;
+						double d2 = proj_point2.cptEuclideanDistance(v1_end_point);
+
+						Vec3 intersection = proj_point1*(d1 / (d1 + d2)) + proj_point2*(d2 / (d1 + d2));
+						/*BorderVertex nv;
+						nv.id = borders.size();
+						nv.nextId = borders[k]->id;
+						borders[k]->prevId = nv.id;
+						nv.prevId = borders[k-1]->id;
+						borders[k - 1]->nextId = nv.id;
+						nv.vertexId = -1;
+						nv.pos = intersection;
+						nv.singularityId = i;
+						nv.singularityVectorId = j;
+						borders.insert(borders.begin() + k, nv);
+						dirSV[i]->relatedBorderVerticesId.push_back(nv.id);*/
+						break;
+					}
+				}
+			}
+		}
+	}
+}
+
+Vec3 Mesh::calcIntersection(Vec3 &vs, Vec3 &ve, Vec3 &us, Vec3 &ue)
+{
+	
+	Vec3 unit_u = (ue-us) / (ue - us).norm();
+	double v_dot1 = (vs - us)*unit_u;
+	Vec3 proj_point1 = us + unit_u*v_dot1;
+	double d1 = proj_point1.cptEuclideanDistance(vs);
+
+	double v_dot2 = (ve - us)*unit_u;
+	Vec3 proj_point2 = us + unit_u*v_dot2;
+	double d2 = proj_point2.cptEuclideanDistance(ve);
+
+	Vec3 intersection = proj_point2*(d1 / (d1 + d2)) + proj_point1*(d2 / (d1 + d2));
+	return intersection;
+}
+bool Mesh::calcCross(Vec3 & vs, Vec3 & ve, Vec3 & us, Vec3 & ue)
+{
+	//æ£€æµ‹væ˜¯å¦å’Œuäº¤å‰ï¼Œå°†uçš„èµ·ç‚¹å’Œvçš„ä¸¤ç«¯ç‚¹åšå‘é‡
+	Vec3 u = ue - us;
+	Vec3 v = ve - vs;
+
+	Vec3 us_vs = vs - us;
+	Vec3 us_ve = ve - us;
+	double d1 = u.cross_2d(us_vs)*u.cross_2d(us_ve);
+	if (d1 < 0 ||d1<1e-6) {
+        return true;
+	}
+	else return false;
+}
+void Mesh::interpolateStreamLine(double density)
+{
+	int start_id=0;
+	renderPoints.clear();
+	double rate = normalVertices[0].normalizeRate;
+	for (int i = 0; i < SLSimplify.size(); ++i) {
+		std::stack<Vec3> start_stack;
+		std::stack<Vec3> end_stack;
+		for (int j = 0; j < SLSimplify[i]->slpc - 1; ++j) {
+			Vec3 st;
+			Vec3 end;
+			Vec3 mid ;
+			st = showSSLS[j + start_id].pos*rate;
+			end = showSSLS[j + start_id + 1].pos*rate;
+			start_stack.push(st);
+			end_stack.push(end);
+			while (!start_stack.empty() && !end_stack.empty()) {
+				st = start_stack.top();
+				end = end_stack.top();
+				if (st.cptEuclideanDistance(end) > density) {
+					mid = (st + end) / 2;
+					end_stack.push(mid);
+				}
+				else {
+					Intersection inter;
+					inter.flag = false;
+					inter.tag = 1;
+					inter.pos = start_stack.top();
+
+					double min_dist = 999.0;
+					for (int l = 0; l < dirSV.size(); ++l) {
+						if (dirSV[l]->svt == singularType::SV_THR || dirSV[l]->svt == singularType::SV_FIV) {
+							if (inter.pos.cptEuclideanDistance(dirSV[l]->pos*rate) < min_dist) {
+								min_dist = inter.pos.cptEuclideanDistance(dirSV[l]->pos*rate);
+								inter.singularityId = l;
+								inter.minDistSingularityPos = dirSV[l]->pos*rate;
+							}
+						}
+					}
+					min_dist = 999.0;
+					for (int l = 0; l < borders.size(); ++l) {
+						if (inter.pos.cptEuclideanDistance(borders[l]->pos) < min_dist) {
+							min_dist = inter.pos.cptEuclideanDistance(borders[l]->pos);
+							inter.borderId = l;
+							inter.minDistBorderVertexPos = borders[l]->pos;
+						}
+					}
+					intersections.push_back(inter);
+
+					start_stack.pop();
+
+					min_dist = 999.0;
+					/*intersection.pos = end_stack.top();
+					for (int l = 0; l < dirSV.size(); ++l) {
+						if (dirSV[l]->svt == singularType::SV_THR || dirSV[l]->svt == singularType::SV_FIV) {
+							if (intersection.pos.cptEuclideanDistance(dirSV[l]->pos) < min_dist) {
+								min_dist = intersection.pos.cptEuclideanDistance(dirSV[l]->pos);
+								intersection.singularityId = l;
+								intersection.minDistSingularityPos = dirSV[l]->pos;
+							}
+						}
+					}
+					min_dist = 999.0;
+					for (int l = 0; l < borders.size(); ++l) {
+						if (intersection.pos.cptEuclideanDistance(borders[l]->pos) < min_dist) {
+							min_dist = intersection.pos.cptEuclideanDistance(borders[l]->pos);
+							intersection.borderId = l;
+							intersection.minDistBorderVertexPos = borders[l]->pos;
+						}
+					}
+					intersections.push_back(intersection);*/
+
+					start_stack.push(end_stack.top());
+					end_stack.pop();
+				}
+			}
+		}
+		Intersection intersection;
+		
+		intersection.flag = false;
+		double min_dist = 999.0;
+		intersection.pos = showSSLS[SLSimplify[i]->slpc + start_id - 1].pos*rate;
+		for (int l = 0; l < dirSV.size(); ++l) {
+			if (dirSV[l]->svt == singularType::SV_THR || dirSV[l]->svt == singularType::SV_FIV) {
+				if (intersection.pos.cptEuclideanDistance(dirSV[l]->pos*rate) < min_dist) {
+					min_dist = intersection.pos.cptEuclideanDistance(dirSV[l]->pos*rate);
+					intersection.singularityId = l;
+					intersection.minDistSingularityPos = dirSV[l]->pos*rate;
+				}
+			}
+		}
+		min_dist = 999.0;
+		for (int l = 0; l < borders.size(); ++l) {
+			if (intersection.pos.cptEuclideanDistance(borders[l]->pos) < min_dist) {
+				min_dist = intersection.pos.cptEuclideanDistance(borders[l]->pos);
+				intersection.borderId = l;
+				intersection.minDistBorderVertexPos = borders[l]->pos;
+			}
+		}
+		intersection.tag = 1;
+		intersections.push_back(intersection);
+		start_id += SLSimplify[i]->slpc;
+	}
+	
+}
+void Mesh::interpolateBorder(double density)
+{
+	int start_id = 0;
+	//double density = 0.05;
+	renderPoints.clear();
+	int borders_size = borders.size();
+	for (int i = 0; i < borders_size; ++i) {
+		std::stack<BorderVertex*> start_stack;
+		std::stack<BorderVertex*> end_stack;
+		BorderVertex *st;
+		BorderVertex *end;
+		BorderVertex *mid;
+		start_stack.push(borders[i]);
+		end_stack.push(borders[borders[i]->nextId]);
+		while (!start_stack.empty() && !end_stack.empty()) {
+			st = start_stack.top();
+			end = end_stack.top();
+			if (st->pos.cptEuclideanDistance(end->pos) > density) {
+				mid = new BorderVertex();
+				mid->pos = (st->pos + end->pos) / 2;
+				mid->id = -1;
+				end_stack.push(mid);
+			}
+			else {
+				PCPoint p;
+				p.pos = end_stack.top()->pos;
+				bool new_one = false;
+				if (end_stack.top()->id == -1) {
+					new_one = true;
+					end_stack.top()->id = borders.size();
+					end_stack.top()->vertexId = -1;
+				}
+			    end_stack.top()->prevId = start_stack.top()->id;
+				start_stack.top()->nextId = end_stack.top()->id;
+				if(new_one) 
+				    borders.push_back(end_stack.top());
+				renderPoints.push_back(p);
+				start_stack.pop();
+				start_stack.push(end_stack.top());
+				end_stack.pop();
+			}
+		}
+	}
+	
+}
+void Mesh::gatherPoints(double tolerance,double increment)
+{
+	renderPoints.clear();
+	int in_sz = intersections.size();
+	double rate = normalVertices[0].normalizeRate;
+	for (int i = 0; i < normalVertices.size(); ++i) {
+		bool is_near = false;
+		for (int j = 0; j < in_sz; ++j) {
+			if (intersections[j].pos.cptEuclideanDistance(normalVertices[i].pos) <= tolerance) {
+				is_near = true;
+				break;
+			}
+		}
+		Intersection in;
+		//PCPoint p;
+		//p.pos= normalVertices[i].pos;
+		in.pos = normalVertices[i].pos;
+		in.id = intersections.size();
+		double min_dist = 999.0;
+		for (int l = 0; l < dirSV.size(); ++l) {
+			if (dirSV[l]->svt == singularType::SV_THR || dirSV[l]->svt == singularType::SV_FIV) {
+				if (in.pos.cptEuclideanDistance(dirSV[l]->pos*rate) < min_dist) {
+					min_dist = in.pos.cptEuclideanDistance(dirSV[l]->pos*rate);
+					in.singularityId = l;
+					in.minDistSingularityPos = dirSV[l]->pos*rate;
+				}
+			}
+		}
+		min_dist = 999.0;
+		for (int l = 0; l < borders.size(); ++l) {
+			if (in.pos.cptEuclideanDistance(borders[l]->pos) < min_dist) {
+				min_dist = in.pos.cptEuclideanDistance(borders[l]->pos);
+				in.borderId = l;
+				in.minDistBorderVertexPos = borders[l]->pos;
+			}
+		}
+		in.flag = false;
+		if (is_near) {
+			in.tag = 1;
+			//renderPoints.push_back(p);
+			intersections.push_back(in);
+		}
+		else {
+			in.tag = 0;
+			pointsOutOfScope.push_back(in);
+			
+		}
+	}
+}
+void Mesh::gatherTestPoints(double tolerance)
+{
+	double rate = normalVertices[0].normalizeRate;
+	bool is_near=false;
+	vector<Intersection> its;
+	its.insert(its.end(), intersections.begin(), intersections.end());
+	intersections.clear();
+	for (int i = 0; i < normalVertices.size(); ++i) {
+		Intersection in;
+		in.pos = normalVertices[i].pos*rate;
+		in.id = intersections.size();
+		for (int j = 0; j < its.size(); ++j) {
+			if (its[j].pos.cptEuclideanDistance(normalVertices[i].pos) <= tolerance) {
+				is_near = true;
+				break;
+			}
+		}
+		double min_dist = 999.0;
+		for (int l = 0; l < dirSV.size(); ++l) {
+			if (dirSV[l]->svt == singularType::SV_THR || dirSV[l]->svt == singularType::SV_FIV) {
+				if (in.pos.cptEuclideanDistance(dirSV[l]->pos*rate) < min_dist) {
+					min_dist = in.pos.cptEuclideanDistance(dirSV[l]->pos*rate);
+					in.singularityId = l;
+					in.minDistSingularityPos = dirSV[l]->pos*rate;
+				}
+			}
+		}
+		min_dist = 999.0;
+		for (int l = 0; l < borders.size(); ++l) {
+			if (in.pos.cptEuclideanDistance(borders[l]->pos) < min_dist) {
+				min_dist = in.pos.cptEuclideanDistance(borders[l]->pos);
+				in.borderId = l;
+				in.minDistBorderVertexPos = borders[l]->pos;
+			}
+		}
+		if (is_near) {
+			in.tag = 1;
+		}
+		else {
+			in.tag = 0;
+		}
+		is_near = false;
+		intersections.push_back(in);
+	}
+}
+
+void Mesh::shootRayFromBorder(double increment)
+{
+	//double error = 0.08;
+    //double increment = 0.05;
+	for (int i = 0; i < borders.size(); ++i) {
+		Vec3 st_point = borders[i]->pos;
+		Vec3 bv = borders[borders[i]->nextId]->pos - borders[i]->pos;
+		Vec3 bv_vertical;
+		Vec3 bv_vertical1 = Vec3(-bv.v[1], bv.v[0], 0.0);
+		Vec3 bv_vertical2 = Vec3(bv.v[1], -bv.v[0], 0.0);
+		if (bv.cross_2d(bv_vertical1) > 0) bv_vertical = bv_vertical1;
+		else if (bv.cross_2d(bv_vertical2) > 0)  bv_vertical = bv_vertical2;
+		borders[i]->injectionVector = bv_vertical;
+		Vec3 unit_bvv = bv_vertical / bv_vertical.norm();
+		double multi_lenth = increment;
+		Vec3 new_vec = unit_bvv*multi_lenth;
+		Vec3 new_point = borders[i]->pos + new_vec;
+		
+		double max_dist = 0.0;
+		int max_border_id = i;
+		Vec3 max_inter;
+		while (new_point.cptEuclideanDistance(borders[i]->pos) <= diagonalLength) {
+			for (int j = 0; j < borders.size(); ++j) {
+				if (j == i) continue;
+				Vec3 bv_t = borders[borders[j]->nextId]->pos - borders[j]->pos;
+				if (calcCross(borders[j]->pos, borders[borders[j]->nextId]->pos,
+					borders[i]->pos, new_point)
+					&& calcCross(borders[i]->pos, new_point, borders[j]->pos, borders[borders[j]->nextId]->pos
+					)) {
+					Vec3 inter = calcIntersection(new_point, borders[i]->pos, borders[j]->pos, borders[borders[j]->nextId]->pos);
+					if (inter.cptEuclideanDistance(borders[i]->pos) > max_dist) {
+						max_dist = inter.cptEuclideanDistance(borders[i]->pos);
+						max_border_id = j;
+						max_inter = inter;
+					}
+
+				}
+			}
+			multi_lenth += increment;
+			new_vec = unit_bvv*multi_lenth;
+			new_point = borders[i]->pos + new_vec;
+		}
+		borders[i]->maxIntersectionBorderId = max_border_id;
+		borders[i]->maxIntersectionBorderPoint = max_inter;
+		borders[i]->maxIntersectionBorderDist = max_dist;
+
+	}
+}
+
+bool Mesh::interpolatePoints()
+{
+	/*dirSV.clear();
+	for (int i = 0; i < renderPoints.size(); ++i) {
+		Vec3 pos0 = vert[face[portentialFaces[i]].index[0]].pos;
+		Vec3 pos1 = vert[face[portentialFaces[i]].index[1]].pos;
+		Vec3 pos2 = vert[face[portentialFaces[i]].index[2]].pos;
+		Vec3 pos_c = (pos0+pos1+pos2) / 3;
+		Singular* sv1 = new Singular();
+		sv1->pos = pos_c;
+		dirSV.push_back(sv1);
+		Singular* sv2 = new Singular();
+		sv2->pos = (pos_c + pos0) / 2;
+		dirSV.push_back(sv2);
+		Singular* sv3 = new Singular();
+		sv3->pos = (pos1 + pos_c) / 2;
+		dirSV.push_back(sv3);
+		Singular* sv4 = new Singular();
+		sv4->pos = (pos2 + pos_c) / 2;
+		dirSV.push_back(sv4);
+	}*/
+	QFile fp("D:\\test.ply");
+	if (!fp.open(QIODevice::WriteOnly | QIODevice::Text)) {
+		QMessageBox::warning(NULL, "warning", "can't open output(gm2) file!", QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+		return false;
+	}
+	QTextStream stream(&fp);
+	stream.setRealNumberNotation(QTextStream::ScientificNotation);
+	stream.setFieldAlignment(QTextStream::AlignRight);
+	stream <<
+		"ply\n" <<
+		"format ascii 1.0\n" <<
+		"comment VCGLIB generated\n" <<
+		"element vertex " <<
+		renderPoints.size() << "\n" <<
+		"property float x\n" <<
+		"property float y\n" <<
+		"property float z\n" <<
+		"element face 0\n" <<
+		"property list uchar int vertex_indices\n" <<
+		"end_header" << endl;
+	for (int i = 0; i < renderPoints.size(); i++) {
+		stream << qSetFieldWidth(6) << renderPoints[i].pos[0] << " " << renderPoints[i].pos[1] << " " << -1 << endl;
+	}
+	fp.close();
+	return true;
+}
+
 void Mesh::setVertTagType(StreamLine sl,const HE_edge &he)
 {
 	int startSingularType =dirSV[sl.startSingularIndex]->svt;
 	int endSingularType = dirSV[sl.endSingularIndex]->svt;
 	
-	int type=0;
-	if (startSingularType == SV_BOR) {
+	int type=1;
+	/*if (startSingularType == SV_BOR) {
 		if (endSingularType == SV_BOR) {
 			type = 4;
 		}
@@ -3231,11 +3825,14 @@ void Mesh::setVertTagType(StreamLine sl,const HE_edge &he)
 		else if (endSingularType == SV_FIV) {
 			type = 3;
 		}
-	}
+	}*/
 	HE_vert *v0 = halfVerts[he.vertI];
 	HE_vert *v1 = halfVerts[halfEdges[he.nextI]->vertI];
 	HE_vert *v2 = halfVerts[halfEdges[he.frontI]->vertI];
-	if (type == 2) {
+	v0->vType = type;
+	v1->vType = type;
+	v2->vType = type;
+	/*if (type == 2) {
 		v0->vType == 2 || v0->vType == 0 ? v0->vType = 2 : v0->vType = 11;
 		v1->vType == 2 || v1->vType == 0 ? v1->vType = 2 : v1->vType = 11;
 		v2->vType == 2 || v2->vType == 0 ? v2->vType = 2 : v2->vType = 11;
@@ -3279,30 +3876,67 @@ void Mesh::setVertTagType(StreamLine sl,const HE_edge &he)
 		v0->vType == 10 || v0->vType == 0 ? v0->vType = 10 : v0->vType = 11;
 		v1->vType == 10 || v1->vType == 0 ? v1->vType = 10 : v1->vType = 11;
 		v2->vType == 10 || v2->vType == 0 ? v2->vType = 10 : v2->vType = 11;
-	}
+	}*/
+
 }
 
-void Mesh::getFacesStreamLineGoThrough()
+bool Mesh::isPointInTriangle(Vec3 a, Vec3 b, Vec3 c, Vec3 p)
 {
+	Vec3 v0 = c - a;
+	Vec3 v1 = b - a;
+	Vec3 v2 = p - a;
+
+	float dot00 = v0*v0;
+	float dot01 = v0*v1;
+	float dot02 = v0*v2;
+	float dot11 = v1*v1;
+	float dot12 = v1*v2;
+
+	float inverDeno = 1 / (dot00 * dot11 - dot01 * dot01);
+
+	float u = (dot11 * dot02 - dot01 * dot12) * inverDeno;
+	if (u < 0 || u > 1) // if u out of range, return directly
+	{
+		return false;
+	}
+
+	float v = (dot00 * dot12 - dot01 * dot02) * inverDeno;
+	if (v < 0 || v > 1) // if v out of range, return directly
+	{
+		return false;
+	}
+
+	return u + v <= 1;
+}
+void Mesh::getFacesStreamLineGoThrough_()
+{
+	double rate = normalVertices[0].normalizeRate;
 	int streamPointIndex = 0;
 	for (int i = 0; i < SLSimplify.size(); ++i) {
 		Singular startSingular;
 		PCPoint currentPoint;
 		startSingular = *dirSV[SLSimplify[i]->startSingularIndex];
 		currentPoint.pos = startSingular.pos;
-	    HE_face curFace(-1, -1);
-	    HE_edge curHe(-1, -1, -1, -1, -1);
+		HE_face curFace(-1, -1);
+		HE_edge curHe(-1, -1, -1, -1, -1);
 		if (startSingular.faceI != -1) {
-			if (startSingular.faceI!= -2) {
-	           curFace = *halfFaces[startSingular.faceI];
-			   curHe = *halfEdges[halfFaces[startSingular.faceI]->edgeI];
+			if (startSingular.faceI != -2) {
+				curFace = *halfFaces[startSingular.faceI];
+				curHe = *halfEdges[halfFaces[startSingular.faceI]->edgeI];
 			}
 			else {
-				// µÚÒ»¶ÎÁ÷Ïß´Ó¶¥µãÉä³ö£¬ĞèÒª±éÀú¶¥µãÁÚÓòÃæÕÒµ½Á÷ÈëµÄÃæ
+				// ç¬¬ä¸€æ®µæµçº¿ä»é¡¶ç‚¹å°„å‡ºï¼Œéœ€è¦éå†é¡¶ç‚¹é‚»åŸŸé¢æ‰¾åˆ°æµå…¥çš„é¢
 				HE_edge he(*halfEdges[halfVerts[startSingular.vertI]->edgeI]);
 				curHe = he;
-
-				do { // ±éÀúµãµÄÁÚÓòÃæ
+				do { // éå†ç‚¹çš„é‚»åŸŸé¢
+					 /*if (isPointInTriangle(halfVerts[curHe.vertI]->pos,
+					 halfVerts[halfEdges[curHe.nextI]->vertI]->pos,
+					 currentPoint.pos, showSSLS[streamPointIndex + 1].pos
+					 )) {
+					 curFace = *halfFaces[curHe.faceI];
+					 curFace.is_selected = true;
+					 break;
+					 }*/
 					if (calParToP(currentPoint.pos - halfVerts[curHe.vertI]->pos,
 						currentPoint.pos - halfVerts[halfEdges[curHe.nextI]->vertI]->pos,
 						currentPoint.pos - showSSLS[streamPointIndex + 1].pos)) {
@@ -3310,7 +3944,7 @@ void Mesh::getFacesStreamLineGoThrough()
 						curFace.is_selected = true;
 						break;
 					}
-					// ÕÒÏÂÒ»¸öÃæ
+					// æ‰¾ä¸‹ä¸€ä¸ªé¢
 					if (curHe.pairI != -1) {
 						curHe = *halfEdges[halfEdges[curHe.pairI]->nextI];
 					}
@@ -3319,15 +3953,15 @@ void Mesh::getFacesStreamLineGoThrough()
 				if (curFace.index == -1) {
 					HE_edge he_f(*halfEdges[he.frontI]);
 					curHe = he_f;
-					do { // ±éÀúµãµÄÁÚÓòÃæ
+					do { // éå†ç‚¹çš„é‚»åŸŸé¢
 						if (calParToP(currentPoint.pos - halfVerts[halfEdges[curHe.frontI]->vertI]->pos,
 							currentPoint.pos - halfVerts[halfEdges[curHe.nextI]->vertI]->pos,
-							currentPoint.pos - showSSLS[streamPointIndex + 1].pos)) { // ÅĞ¶ÏÁ÷ÏßÊÇ·ñÔÚÁ½Ìõ°ë±ßÖ®¼ä
+							currentPoint.pos - showSSLS[streamPointIndex + 1].pos)) { // åˆ¤æ–­æµçº¿æ˜¯å¦åœ¨ä¸¤æ¡åŠè¾¹ä¹‹é—´
 							curFace = *halfFaces[curHe.faceI];
 							curFace.is_selected = true;
 							break;
 						}
-						// ÕÒÏÂÒ»¸öÃæ
+						// æ‰¾ä¸‹ä¸€ä¸ªé¢
 						if (curHe.pairI != -1) {
 							curHe = *halfEdges[halfEdges[curHe.pairI]->frontI];
 						}
@@ -3342,11 +3976,11 @@ void Mesh::getFacesStreamLineGoThrough()
 		}
 
 		else if (startSingular.vertI != -1) {
-			// µÚÒ»¶ÎÁ÷Ïß´Ó¶¥µãÉä³ö£¬ĞèÒª±éÀú¶¥µãÁÚÓòÃæÕÒµ½Á÷ÈëµÄÃæ
+			// ç¬¬ä¸€æ®µæµçº¿ä»é¡¶ç‚¹å°„å‡ºï¼Œéœ€è¦éå†é¡¶ç‚¹é‚»åŸŸé¢æ‰¾åˆ°æµå…¥çš„é¢
 			HE_edge he(*halfEdges[halfVerts[startSingular.vertI]->edgeI]);
 			curHe = he;
 
-			do { // ±éÀúµãµÄÁÚÓòÃæ
+			do { // éå†ç‚¹çš„é‚»åŸŸé¢
 				if (calParToP(currentPoint.pos - halfVerts[curHe.vertI]->pos,
 					currentPoint.pos - halfVerts[halfEdges[curHe.nextI]->vertI]->pos,
 					currentPoint.pos - showSSLS[streamPointIndex + 1].pos)) {
@@ -3354,7 +3988,7 @@ void Mesh::getFacesStreamLineGoThrough()
 					curFace.is_selected = true;
 					break;
 				}
-				// ÕÒÏÂÒ»¸öÃæ
+				// æ‰¾ä¸‹ä¸€ä¸ªé¢
 				if (curHe.pairI != -1) {
 					curHe = *halfEdges[halfEdges[curHe.pairI]->nextI];
 				}
@@ -3362,45 +3996,275 @@ void Mesh::getFacesStreamLineGoThrough()
 			if (curFace.index != -1) {
 				HE_edge he_f(*halfEdges[he.frontI]);
 				curHe = he_f;
-				do { // ±éÀúµãµÄÁÚÓòÃæ
+				do { // éå†ç‚¹çš„é‚»åŸŸé¢
 					if (calParToP(currentPoint.pos - halfVerts[halfEdges[curHe.frontI]->vertI]->pos,
 						currentPoint.pos - halfVerts[halfEdges[curHe.nextI]->vertI]->pos,
-						currentPoint.pos - showSSLS[streamPointIndex + 1].pos)) { // ÅĞ¶ÏÁ÷ÏßÊÇ·ñÔÚÁ½Ìõ°ë±ßÖ®¼ä
+						currentPoint.pos - showSSLS[streamPointIndex + 1].pos)) { // åˆ¤æ–­æµçº¿æ˜¯å¦åœ¨ä¸¤æ¡åŠè¾¹ä¹‹é—´
 						curFace = *halfFaces[curHe.faceI];
 						curFace.is_selected = true;
 						break;
 					}
-					// ÕÒÏÂÒ»¸öÃæ
+					// æ‰¾ä¸‹ä¸€ä¸ªé¢
 					if (curHe.pairI != -1) {
 						curHe = *halfEdges[halfEdges[curHe.pairI]->frontI];
 					}
 				} while (he_f.index != curHe.index);
 			}
 		}
+		HE_edge st = curHe;
+		//curHe = *halfEdges[st.nextI];
+		do {
+			Vec3 u1 = vert[curHe.vertI].pos;
+			Vec3 u2 = vert[halfEdges[curHe.frontI]->vertI].pos;
+			Vec3 v1 = showSSLS[streamPointIndex].pos;
+			Vec3 v2 = showSSLS[streamPointIndex + 1].pos;
+			if (calcCross(v1, v2, u1, u2)
+				&& calcCross(u1, u2, v1, v2)) {
+				break;
+			}
+			curHe = *halfEdges[curHe.nextI];
+		} while (curHe.index != st.index);
+		for (int j =1; j < SLSimplify[i]->slpc-1; ++j) {
+			NormalVtx n;
+			n.id = j+streamPointIndex-1;
+			n.pos = showSSLS[j+streamPointIndex].pos*rate;
+			n.nextPointPos= showSSLS[j+streamPointIndex + 1].pos*rate;
+			int vert1_id = halfEdges[curHe.pairI]->vertI;
+			n.vert1Pos = vert[vert1_id].pos*rate;
+			int vert2_id = halfEdges[halfEdges[curHe.pairI]->nextI]->vertI;
+			n.vert2Pos = vert[vert2_id].pos*rate;
+			int vert3_id = halfEdges[halfEdges[curHe.pairI]->frontI]->vertI;
+			n.vert3Pos = vert[vert3_id].pos*rate;
 
+			//normalizeRegressionPoints(n);
+			n.vert1_fv[0] = Vec3(fabs(halfVerts[vert1_id]->vec.v[0]), fabs(halfVerts[vert1_id]->vec.v[1]), fabs(halfVerts[vert1_id]->vec.v[2]));
+			n.vert1_fv[1] = Vec3(-n.vert1_fv[0].v[1], n.vert1_fv[0].v[0], n.vert1_fv[0].v[2]);
+
+			n.vert2_fv[0] = Vec3(fabs(halfVerts[vert2_id]->vec.v[0]), fabs(halfVerts[vert2_id]->vec.v[1]), fabs(halfVerts[vert2_id]->vec.v[2]));
+			n.vert2_fv[1] = Vec3(-n.vert2_fv[0].v[1], n.vert2_fv[0].v[0], n.vert2_fv[0].v[2]);
+
+			n.vert3_fv[0] = Vec3(fabs(halfVerts[vert3_id]->vec.v[0]), fabs(halfVerts[vert3_id]->vec.v[1]), fabs(halfVerts[vert3_id]->vec.v[2]));
+			n.vert3_fv[1] = Vec3(-n.vert3_fv[0].v[1], n.vert3_fv[0].v[0], n.vert3_fv[0].v[2]);
+
+			regressionPredictionTrainPoints.push_back(n);
+	/*		if (j == 3) {*/
+				//PCPoint p;
+				//p.pos = Vec3(2.1200705029551510, 2.1254556457639864, 0.0);
+				//p.pos = n.pos;
+				//renderPoints.push_back(p);
+				//p.pos = n.nextPointPos;
+				//renderPoints.push_back(p);
+				//p.pos = n.vert1Pos;
+				//renderPoints.push_back(p);
+				//p.pos = n.vert2Pos;
+				//renderPoints.push_back(p);
+				//p.pos = vert[578].pos;
+				//renderPoints.push_back(p);
+				//p.pos = n.vert3Pos;
+				//renderPoints.push_back(p);
+			//}
+			HE_edge st = *halfEdges[curHe.pairI];
+			curHe = *halfEdges[st.nextI];
+			while (curHe.index != st.index) {
+				Vec3 u1 = vert[curHe.vertI].pos;
+				Vec3 u2 = vert[halfEdges[curHe.frontI]->vertI].pos;
+				Vec3 v1 = n.pos;
+				Vec3 v2 = n.nextPointPos;
+				if (calcCross(v1, v2, u1, u2) && calcCross(u1, u2, v1, v2)) {
+					break;
+				}
+				curHe = *halfEdges[curHe.nextI];
+			}
+		}
+		streamPointIndex += SLSimplify[i]->slpc;
+	}
+}
+
+void Mesh::normalizeRegressionPoints(NormalVtx & nv)
+{
+	Vec3 translation = nv.pos;
+	Vec3 temp;
+	double scale = sqrt((nv.pos.v[0] - nv.vert2Pos.v[0])*(nv.pos.v[0] - nv.vert2Pos.v[0])
+		+ (nv.pos.v[1] - nv.vert2Pos.v[1])*(nv.pos.v[1] - nv.vert2Pos.v[1]));
+	temp = (nv.vert2Pos - nv.pos);
+	double rotation_angle = temp.cptAngleBtwVec(Vec3(1, 0, 0));
+	nv.pos = Vec3(0, 0, 0);
+	temp = (nv.vert1Pos - translation) / scale;
+	if (temp.v[1] > 100) {
+		qDebug() << "?";
+	}
+	nv.vert1Pos = temp.rotate(rotation_angle);
+	temp=(nv.vert2Pos - translation) / scale;
+	if (temp.v[1] > 100) {
+		qDebug() << "?";
+	}
+	nv.vert2Pos = temp.rotate(rotation_angle);
+	temp = (nv.vert3Pos - translation) / scale;
+	if (temp.v[1] > 100) {
+		qDebug() << "?";
+	}
+	nv.vert3Pos = temp.rotate(rotation_angle);
+	temp = (nv.nextPointPos - translation) / scale;
+	nv.nextPointPos = temp.rotate(rotation_angle);
+}
+
+void Mesh::outputRegressionPredictionTrainData(QString path)
+{
+	QFile fp(path);
+	if (!fp.open(QIODevice::WriteOnly | QIODevice::Text)) {
+		QMessageBox::warning(NULL, "warning", "can't open output(gm2) file!", QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+		return;
+	}
+	QTextStream stream(&fp);
+
+	for (int i = 0; i <regressionPredictionTrainPoints.size(); ++i) {
+
+		stream << fixed << qSetRealNumberPrecision(6) <<
+			regressionPredictionTrainPoints[i].pos.v[0] << " " << regressionPredictionTrainPoints[i].pos.v[1] << " "
+			<< regressionPredictionTrainPoints[i].vert1Pos.v[0] << " " << regressionPredictionTrainPoints[i].vert1Pos.v[1] << " "
+			<< regressionPredictionTrainPoints[i].vert1_fv[0].v[0] << " " << regressionPredictionTrainPoints[i].vert1_fv[0].v[1] << " "
+			//<< regressionPredictionTrainPoints[i].vert1_fv[1].v[0] << " " << regressionPredictionTrainPoints[i].vert1_fv[1].v[1] << " "
+			<< regressionPredictionTrainPoints[i].vert2Pos.v[0] << " " << regressionPredictionTrainPoints[i].vert2Pos.v[1] << " "
+			<< regressionPredictionTrainPoints[i].vert2_fv[0].v[0] << " " << regressionPredictionTrainPoints[i].vert2_fv[0].v[1] << " "
+			//<< regressionPredictionTrainPoints[i].vert2_fv[1].v[0] << " " << regressionPredictionTrainPoints[i].vert2_fv[1].v[1] << " "
+			<< regressionPredictionTrainPoints[i].vert3Pos.v[0] << " " << regressionPredictionTrainPoints[i].vert3Pos.v[1] << " "
+			<< regressionPredictionTrainPoints[i].vert3_fv[0].v[0] << " " << regressionPredictionTrainPoints[i].vert3_fv[0].v[1] << " "
+			//<< regressionPredictionTrainPoints[i].vert3_fv[1].v[0] << " " << regressionPredictionTrainPoints[i].vert3_fv[1].v[1] << " "
+			<< regressionPredictionTrainPoints[i].nextPointPos.v[0] << " " << regressionPredictionTrainPoints[i].nextPointPos.v[1] << " " << endl;
+
+	}
+}
+
+void Mesh::getFacesStreamLineGoThrough()
+{
+	int streamPointIndex = 0;
+	int s = face.size();
+	bool b = true;
+	for (int i = 0; i < SLSimplify.size(); ++i) {
+		Singular startSingular;
+		PCPoint currentPoint;
+		startSingular = *dirSV[SLSimplify[i]->startSingularIndex];
+		currentPoint.pos = startSingular.pos;
+	    HE_face curFace(-1, -1);
+	    HE_edge curHe(-1, -1, -1, -1, -1);
+		if (startSingular.faceI != -1) {
+			if (startSingular.faceI!= -2) {
+	           curFace = *halfFaces[startSingular.faceI];
+			   curHe = *halfEdges[halfFaces[startSingular.faceI]->edgeI];
+			}
+			else {
+				// ç¬¬ä¸€æ®µæµçº¿ä»é¡¶ç‚¹å°„å‡ºï¼Œéœ€è¦éå†é¡¶ç‚¹é‚»åŸŸé¢æ‰¾åˆ°æµå…¥çš„é¢
+				HE_edge he(*halfEdges[halfVerts[startSingular.vertI]->edgeI]);
+				curHe = he;
+
+				do { // éå†ç‚¹çš„é‚»åŸŸé¢
+					/*if (isPointInTriangle(halfVerts[curHe.vertI]->pos,
+						halfVerts[halfEdges[curHe.nextI]->vertI]->pos,
+						currentPoint.pos, showSSLS[streamPointIndex + 1].pos
+					)) {
+						curFace = *halfFaces[curHe.faceI];
+						curFace.is_selected = true;
+						break;
+					}*/
+					if (calParToP(currentPoint.pos - halfVerts[curHe.vertI]->pos,
+						currentPoint.pos - halfVerts[halfEdges[curHe.nextI]->vertI]->pos,
+						currentPoint.pos - showSSLS[streamPointIndex + 1].pos)) {
+						curFace = *halfFaces[curHe.faceI];
+						curFace.is_selected = true;
+						break;
+					}
+					// æ‰¾ä¸‹ä¸€ä¸ªé¢
+					if (curHe.pairI != -1) {
+						curHe = *halfEdges[halfEdges[curHe.pairI]->nextI];
+					}
+					else break;
+				} while (he.index != curHe.index);
+				if (curFace.index == -1) {
+					HE_edge he_f(*halfEdges[he.frontI]);
+					curHe = he_f;
+					do { // éå†ç‚¹çš„é‚»åŸŸé¢
+						if (calParToP(currentPoint.pos - halfVerts[halfEdges[curHe.frontI]->vertI]->pos,
+							currentPoint.pos - halfVerts[halfEdges[curHe.nextI]->vertI]->pos,
+							currentPoint.pos - showSSLS[streamPointIndex + 1].pos)) { // åˆ¤æ–­æµçº¿æ˜¯å¦åœ¨ä¸¤æ¡åŠè¾¹ä¹‹é—´
+							curFace = *halfFaces[curHe.faceI];
+							curFace.is_selected = true;
+							break;
+						}
+						// æ‰¾ä¸‹ä¸€ä¸ªé¢
+						if (curHe.pairI != -1) {
+							curHe = *halfEdges[halfEdges[curHe.pairI]->frontI];
+						}
+						else break;
+					} while (he_f.index != curHe.index);
+				}
+			}
+		}
+		else if (startSingular.edgeI != -1) {
+			curFace = *halfFaces[halfEdges[startSingular.edgeI]->faceI];
+			curHe = *halfEdges[startSingular.edgeI];
+		}
+
+		else if (startSingular.vertI != -1) {
+			// ç¬¬ä¸€æ®µæµçº¿ä»é¡¶ç‚¹å°„å‡ºï¼Œéœ€è¦éå†é¡¶ç‚¹é‚»åŸŸé¢æ‰¾åˆ°æµå…¥çš„é¢
+			HE_edge he(*halfEdges[halfVerts[startSingular.vertI]->edgeI]);
+			curHe = he;
+
+			do { // éå†ç‚¹çš„é‚»åŸŸé¢
+				if (calParToP(currentPoint.pos - halfVerts[curHe.vertI]->pos,
+					currentPoint.pos - halfVerts[halfEdges[curHe.nextI]->vertI]->pos,
+					currentPoint.pos - showSSLS[streamPointIndex + 1].pos)) {
+					curFace = *halfFaces[curHe.faceI];
+					curFace.is_selected = true;
+					break;
+				}
+				// æ‰¾ä¸‹ä¸€ä¸ªé¢
+				if (curHe.pairI != -1) {
+					curHe = *halfEdges[halfEdges[curHe.pairI]->nextI];
+				}
+			} while (he.index != curHe.index);
+			if (curFace.index != -1) {
+				HE_edge he_f(*halfEdges[he.frontI]);
+				curHe = he_f;
+				do { // éå†ç‚¹çš„é‚»åŸŸé¢
+					if (calParToP(currentPoint.pos - halfVerts[halfEdges[curHe.frontI]->vertI]->pos,
+						currentPoint.pos - halfVerts[halfEdges[curHe.nextI]->vertI]->pos,
+						currentPoint.pos - showSSLS[streamPointIndex + 1].pos)) { // åˆ¤æ–­æµçº¿æ˜¯å¦åœ¨ä¸¤æ¡åŠè¾¹ä¹‹é—´
+						curFace = *halfFaces[curHe.faceI];
+						curFace.is_selected = true;
+						break;
+					}
+					// æ‰¾ä¸‹ä¸€ä¸ªé¢
+					if (curHe.pairI != -1) {
+						curHe = *halfEdges[halfEdges[curHe.pairI]->frontI];
+					}
+				} while (he_f.index != curHe.index);
+			}
+		}
+		qDebug() << curFace.index<<endl;
 		setVertTagType(*SLSimplify[i],curHe);
 		for (int j = 1; j < SLSimplify[i]->slpc; ++j) {
 			Vec3 u1;
 			Vec3 u2;
 			int r = getNextFace(curFace, curHe, showSSLS[j + streamPointIndex].pos, currentPoint.pos, u1, u2, *SLSimplify[i]);
+		
 			halfFaces[curFace.index]->is_selected = true;
-			//ÅĞ¶ÏÏÂÒ»ÌõÁ÷Ïß¶ÎÔÚÄÄ¸öÃæ
-			if (r == 7) {  //ÉÏÒ»ÌõÁ÷Ïß¶ÎÁ÷Èë¶¥µãÖÕÖ¹£¬ĞèÒªÓÃÏÂÒ»¶ÎÁ÷ÏßÅĞ¶ÏÁ÷ÈëÃæ
+			//åˆ¤æ–­ä¸‹ä¸€æ¡æµçº¿æ®µåœ¨å“ªä¸ªé¢
+			if (r == 7) {  //ä¸Šä¸€æ¡æµçº¿æ®µæµå…¥é¡¶ç‚¹ç»ˆæ­¢ï¼Œéœ€è¦ç”¨ä¸‹ä¸€æ®µæµçº¿åˆ¤æ–­æµå…¥é¢
 				HE_edge he_t(curHe);
 				if (j + 1 < SLSimplify[i]->slpc) {
 					curHe.flag = 7;
 					if (curHe.pairI != -1) {
 						curHe = *halfEdges[halfEdges[curHe.pairI]->frontI];
-						do { // ±éÀúµãµÄÁÚÓòÃæ
+						do { // éå†ç‚¹çš„é‚»åŸŸé¢
 							if (calParToP(showSSLS[j + streamPointIndex].pos - halfVerts[halfEdges[curHe.frontI]->vertI]->pos,
 								showSSLS[j + streamPointIndex].pos - halfVerts[halfEdges[curHe.nextI]->vertI]->pos,
-								showSSLS[j + streamPointIndex].pos - showSSLS[j + streamPointIndex + 1].pos)) { // ÅĞ¶ÏÁ÷ÏßÊÇ·ñÔÚÁ½Ìõ°ë±ßÖ®¼ä
+								showSSLS[j + streamPointIndex].pos - showSSLS[j + streamPointIndex + 1].pos)) { // åˆ¤æ–­æµçº¿æ˜¯å¦åœ¨ä¸¤æ¡åŠè¾¹ä¹‹é—´
 								curFace = *halfFaces[curHe.faceI];
 								curFace.is_selected = true;
 								//he_t = curHe;
 								break;
 							}
-							// ÕÒÏÂÒ»¸öÃæ
+							// æ‰¾ä¸‹ä¸€ä¸ªé¢
 							if (curHe.pairI != -1) {
 								curHe = *halfEdges[halfEdges[curHe.pairI]->frontI];
 							}
@@ -3414,7 +4278,7 @@ void Mesh::getFacesStreamLineGoThrough()
 					curHe.flag = 8;
 					if (curHe.pairI != -1) {
 						curHe = *halfEdges[halfEdges[curHe.pairI]->nextI];
-						do { // ±éÀúµãµÄÁÚÓòÃæ
+						do { // éå†ç‚¹çš„é‚»åŸŸé¢
 							if (calParToP(showSSLS[j + streamPointIndex].pos - halfVerts[curHe.vertI]->pos,
 								showSSLS[j + streamPointIndex].pos - halfVerts[halfEdges[curHe.nextI]->vertI]->pos,
 								showSSLS[j + streamPointIndex].pos - showSSLS[j + streamPointIndex + 1].pos)) {
@@ -3423,7 +4287,7 @@ void Mesh::getFacesStreamLineGoThrough()
 								//he_t = curHe;
 								break;
 							}
-							// ÕÒÏÂÒ»¸öÃæ
+							// æ‰¾ä¸‹ä¸€ä¸ªé¢
 							if (curHe.pairI != -1) {
 								curHe = *halfEdges[halfEdges[curHe.pairI]->nextI];
 							}
@@ -3440,10 +4304,10 @@ int Mesh::getNextFace(HE_face &curFace, HE_edge &curHe, Vec3 &v1, Vec3 &v2, Vec3
 	selectedFaces.push_back(curFace);
 	setVertTagType(sl, curHe);
 	halfFaces[curFace.index]->is_selected = true;
-	// Ö»ÕÒÒ»¶ÎÁ÷Ïß¾­¹ıµÄËùÓĞÃæ
+	// åªæ‰¾ä¸€æ®µæµçº¿ç»è¿‡çš„æ‰€æœ‰é¢
 	int r = -1;
 	HE_edge he(curHe);
-	do {  // Ñ­»·ÈıÌõ°ë±ß
+	do {  // å¾ªç¯ä¸‰æ¡åŠè¾¹
 		u1 = halfVerts[curHe.vertI]->pos;
 		u2 = halfVerts[halfEdges[curHe.frontI]->vertI]->pos;
 
@@ -3458,20 +4322,20 @@ int Mesh::getNextFace(HE_face &curFace, HE_edge &curHe, Vec3 &v1, Vec3 &v2, Vec3
 				continue;
 			}
 			else  if (r == 0) {
-				//½»²æÏà½»
-				if (curHe.flag == 0) { // ²»´¦ÀíÒÑ¿¼ÂÇ¹ıµÄ°ë±ß
+				//äº¤å‰ç›¸äº¤
+				if (curHe.flag == 0) { // ä¸å¤„ç†å·²è€ƒè™‘è¿‡çš„åŠè¾¹
 					curHe = *halfEdges[curHe.frontI];
 					continue;
 				}
 				if (curHe.pairI == -1) return r;
 				curHe.flag = 0;
-				he = *halfEdges[curHe.pairI];// ½»²æÁË¿Ï¶¨ÓĞ¶Ô±ß
+				he = *halfEdges[curHe.pairI];// äº¤å‰äº†è‚¯å®šæœ‰å¯¹è¾¹
 				he.flag = 0;
 				curHe = he;
 				curFace = *halfFaces[curHe.faceI];
 				break;
 			}
-			else if (r == 1) {// Á÷ÏßÖÕÖ¹ÓÚ±ß v1ÔÚu2_u1ÉÏ  
+			else if (r == 1) {// æµçº¿ç»ˆæ­¢äºè¾¹ v1åœ¨u2_u1ä¸Š  
 				if (curHe.pairI != -1) {
 					curHe = *halfEdges[curHe.pairI];
 					curFace = *halfFaces[curHe.faceI];
@@ -3480,7 +4344,7 @@ int Mesh::getNextFace(HE_face &curFace, HE_edge &curHe, Vec3 &v1, Vec3 &v2, Vec3
 				break;
 			}
 			else if (r == 2) {
-				//Á÷ÏßÆğÊ¼ÓÚ±ß v2ÔÚu2_u1ÉÏ
+				//æµçº¿èµ·å§‹äºè¾¹ v2åœ¨u2_u1ä¸Š
 				if (curHe.flag == 2) {
 					curHe = *halfEdges[curHe.frontI];
 					continue;
@@ -3489,20 +4353,20 @@ int Mesh::getNextFace(HE_face &curFace, HE_edge &curHe, Vec3 &v1, Vec3 &v2, Vec3
 				curHe = *halfEdges[curHe.frontI];
 			}
 			else if (r == 3) {
-				if (curHe.flag == 3 || curHe.flag == 4) {  // Èç¹ûÉÏ´Î±éÀú¹ıµÄ¾Í²»¿¼ÂÇ
+				if (curHe.flag == 3 || curHe.flag == 4) {  // å¦‚æœä¸Šæ¬¡éå†è¿‡çš„å°±ä¸è€ƒè™‘
 					curHe = *halfEdges[curHe.frontI];
 					continue;
 				}
 				curHe.flag = 3;
-				//°ë±ßÖÕÖ¹ÓÚÁ÷ÏßµÄÇé¿ö
+				//åŠè¾¹ç»ˆæ­¢äºæµçº¿çš„æƒ…å†µ
 				HE_vert hv(*halfVerts[curHe.vertI]);
 				if (curHe.pairI != -1) {
 					curHe = *halfEdges[halfEdges[curHe.pairI]->frontI];
 				}
-				do { // ±éÀúµãµÄÁÚÓòÃæ
+				do { // éå†ç‚¹çš„é‚»åŸŸé¢
 					if (calParToP(hv.pos - halfVerts[halfEdges[curHe.frontI]->vertI]->pos,
 						hv.pos - halfVerts[halfEdges[curHe.nextI]->vertI]->pos,
-						hv.pos - u1)) { // ÅĞ¶ÏÁ÷ÏßÊÇ·ñÔÚÁ½Ìõ°ë±ßÖ®¼ä
+						hv.pos - u1)) { // åˆ¤æ–­æµçº¿æ˜¯å¦åœ¨ä¸¤æ¡åŠè¾¹ä¹‹é—´
 						curFace = *halfFaces[curHe.faceI];
 						curHe.flag = 4;
 						halfEdges[curHe.nextI]->flag = 3;
@@ -3511,7 +4375,7 @@ int Mesh::getNextFace(HE_face &curFace, HE_edge &curHe, Vec3 &v1, Vec3 &v2, Vec3
 						break;
 					}
 
-					// ÕÒÏÂÒ»¸öÃæ
+					// æ‰¾ä¸‹ä¸€ä¸ªé¢
 					if (curHe.pairI != -1) {
 						curHe = *halfEdges[halfEdges[curHe.pairI]->frontI];
 					}
@@ -3520,17 +4384,17 @@ int Mesh::getNextFace(HE_face &curFace, HE_edge &curHe, Vec3 &v1, Vec3 &v2, Vec3
 
 			}
 			else if (r == 4) {
-				if (curHe.flag == 3 || curHe.flag == 4) {  // Èç¹ûÉÏ´Î±éÀú¹ıµÄ¾Í²»¿¼ÂÇ
+				if (curHe.flag == 3 || curHe.flag == 4) {  // å¦‚æœä¸Šæ¬¡éå†è¿‡çš„å°±ä¸è€ƒè™‘
 					curHe = *halfEdges[curHe.frontI];
 					continue;
 				}
 				curHe.flag = 4;
-				//°ë±ßÆğÊ¼ÓÚÁ÷ÏßµÄÇé¿ö
-				HE_vert hv(*halfVerts[halfEdges[curHe.frontI]->vertI]); // ÒªÈÆµÄ¶¥µã
+				//åŠè¾¹èµ·å§‹äºæµçº¿çš„æƒ…å†µ
+				HE_vert hv(*halfVerts[halfEdges[curHe.frontI]->vertI]); // è¦ç»•çš„é¡¶ç‚¹
 				if (curHe.pairI != -1) {
 					curHe = *halfEdges[halfEdges[curHe.pairI]->nextI];
 				}
-				do { // ±éÀúµãµÄÁÚÓòÃæ
+				do { // éå†ç‚¹çš„é‚»åŸŸé¢
 					if (calParToP(hv.pos - halfVerts[curHe.vertI]->pos,
 						hv.pos - halfVerts[halfEdges[curHe.frontI]->vertI]->pos,
 						hv.pos - u1)) {
@@ -3541,7 +4405,7 @@ int Mesh::getNextFace(HE_face &curFace, HE_edge &curHe, Vec3 &v1, Vec3 &v2, Vec3
 						he = curHe;
 						break;
 					}
-					// ÕÒÏÂÒ»¸öÃæ
+					// æ‰¾ä¸‹ä¸€ä¸ªé¢
 					if (curHe.pairI != -1) {
 						curHe = *halfEdges[halfEdges[curHe.pairI]->nextI];
 					}
@@ -3549,7 +4413,7 @@ int Mesh::getNextFace(HE_face &curFace, HE_edge &curHe, Vec3 &v1, Vec3 &v2, Vec3
 
 			}
 			else if (r == 5) {
-				//´ÓÍø¸ñ¶¥µãÉä³ö
+				//ä»ç½‘æ ¼é¡¶ç‚¹å°„å‡º
 				if (curHe.flag == 5) {
 					curHe = *halfEdges[curHe.frontI];
 					continue;
@@ -3558,7 +4422,7 @@ int Mesh::getNextFace(HE_face &curFace, HE_edge &curHe, Vec3 &v1, Vec3 &v2, Vec3
 				curHe = *halfEdges[curHe.frontI];
 			}
 			else if (r == 6) {
-				//´ÓÍø¸ñ¶¥µãÉä³ö
+				//ä»ç½‘æ ¼é¡¶ç‚¹å°„å‡º
 				if (curHe.flag == 6) {
 					curHe = *halfEdges[curHe.frontI];
 					continue;
@@ -3568,8 +4432,8 @@ int Mesh::getNextFace(HE_face &curFace, HE_edge &curHe, Vec3 &v1, Vec3 &v2, Vec3
 			}
 			
 			else if (r == 7 || r == 8) {
-				// Á÷ÈëÍø¸ñ¶¥µã
-				//ĞèÒªÀûÓÃÏÂÒ»¶ÎÁ÷ÏßÅĞ¶Ï
+				// æµå…¥ç½‘æ ¼é¡¶ç‚¹
+				//éœ€è¦åˆ©ç”¨ä¸‹ä¸€æ®µæµçº¿åˆ¤æ–­
 				break;
 			}
 			else return r;
@@ -3578,7 +4442,7 @@ int Mesh::getNextFace(HE_face &curFace, HE_edge &curHe, Vec3 &v1, Vec3 &v2, Vec3
 
 	} while (he.index != curHe.index);
 
-	if (r == 0 || r == 2 || r == 3 || r == 4)
+	if (r == 0||r==2||r==3||r==4)
 		r = getNextFace(curFace, curHe, v1, v2, u1, u2,sl);
 	return r;
 }
@@ -3861,7 +4725,7 @@ void Mesh::findSingular() {
 	if (vert.size() > 0 && halfEdges != nullptr) {
 		for (int i = 0; i < face.size() * 3; i++) {
 			if (halfEdges[i]->pairI == -1)
-				getBorderSingular(i);	//ĞèÒªÌáÇ°´¦Àí
+				getBorderSingular(i);	//éœ€è¦æå‰å¤„ç†
 		}
 		for (int i = 0; i < face.size(); i++) {
 			int edgeTemp[3] = { halfFaces[i]->edgeI ,halfEdges[halfFaces[i]->edgeI]->nextI ,halfEdges[halfFaces[i]->edgeI]->frontI };
@@ -3897,7 +4761,7 @@ void Mesh::findSingular() {
 
 			}
 			if (fabs(fabs(rotateA) - 2.0*Q_PI) < 1e-5 && !isExistSV) {
-#pragma region Ææµã				
+#pragma region å¥‡ç‚¹				
 				Vec3 norm1, norm2, norm3;
 				Vec3 normA3[3];
 				double afx, afy, afz;
@@ -3963,7 +4827,7 @@ void Mesh::findSingular() {
 #pragma endregion		
 			}
 		}
-#pragma region ±ß½çÀà±ğ
+#pragma region è¾¹ç•Œç±»åˆ«
 		for (int i = 0; i < vert.size(); i++) {
 			if (halfVerts[i]->isBoundary && halfVerts[i]->type == -1) {
 				int iterI = i;
@@ -3990,7 +4854,7 @@ void Mesh::findSingular() {
 		}
 #pragma endregion	
 		isGenSingular = true;
-#pragma region Ææµã¸½½üµÄÁ÷µã
+#pragma region å¥‡ç‚¹é™„è¿‘çš„æµç‚¹
 		for (int i = 0; i < dirSV.size(); i++) {
 			if (dirSV[i]->vertI >= 0) {
 				if (halfVerts[dirSV[i]->vertI]->isBoundary) {
@@ -4057,7 +4921,7 @@ void Mesh::findSingular() {
 				}
 			}
 			else if (dirSV[i]->edgeI >= 0 && dirSV[i]->faceI == -1 && dirSV[i]->vertI == -1) {
-				//ÓÉËùÔÚÃæ°üº¬	
+				//ç”±æ‰€åœ¨é¢åŒ…å«	
 				int edgeTemp[4] = { 0 };
 				edgeTemp[0] = halfEdges[dirSV[i]->edgeI]->nextI;
 				edgeTemp[1] = halfEdges[edgeTemp[0]]->nextI;
@@ -4076,7 +4940,7 @@ void Mesh::findSingular() {
 				}
 			}
 			else if (dirSV[i]->vertI >= 0 && dirSV[i]->faceI != -4 && dirSV[i]->edgeI == -1) {
-				//ÕÒµ½³õÊ¼°ë±ßÒÔ¼°×îºó°ë±ß
+				//æ‰¾åˆ°åˆå§‹åŠè¾¹ä»¥åŠæœ€ååŠè¾¹
 				int startHalfEdgeIto = halfVerts[dirSV[i]->vertI]->edgeI;
 				int endHalfEdgeIto = halfVerts[getBFrontPTodNextPI(dirSV[i]->vertI)]->edgeI;
 				Vec3 dirn1 = (halfVerts[halfEdges[startHalfEdgeIto]->vertI]->pos - dirSV[i]->pos).normalized();
@@ -4089,7 +4953,7 @@ void Mesh::findSingular() {
 				Vec3 crossF[4];
 				for (int ii = 0; ii < 4; ii++) {
 					Vec3 cfTemp = angleToNorm(crossFn);
-					//¼Ğ½Ç´óÓÚÁùÊ®¶È
+					//å¤¹è§’å¤§äºå…­ååº¦
 					if (acos(cfTemp*dirn1) > Q_PI / 4.0 && acos(cfTemp*dirn2) > Q_PI / 4.0) {
 						if (ratoteA > Q_PI) {
 							if (!calParToP(dirn1, dirn2, cfTemp)) {
@@ -4200,7 +5064,7 @@ QString Mesh::getSVCount() {
 	}
 	return "three:" + QString::number(threeValueSV) + " | five:" + QString::number(fiveValueSV) + " | border:" + QString::number(borderValueSV) + "\n" + "Corner:" + QString::number(cornerValueSV) + " | four:" + QString::number(fourValueSV) + " | SLB:" + QString::number(slBValueSV);
 }
-//ÇøÓò·Ö½â
+//åŒºåŸŸåˆ†è§£
 bool Mesh::GenRegDiv() {
 	if (halfEdges != nullptr) {
 		double qSize = 1e5;
@@ -4209,7 +5073,7 @@ bool Mesh::GenRegDiv() {
 		dirSV.clear();
 		/*bEdges.reserve(bVEdge.size());
 		bEdges.clear();*/
-#pragma region ±ß½çµã
+#pragma region è¾¹ç•Œç‚¹
 		for (int i = 0; i < face.size(); i++) {
 			int edgeTemp[3] = { halfFaces[i]->edgeI ,halfEdges[halfFaces[i]->edgeI]->nextI,halfEdges[halfFaces[i]->edgeI]->frontI };
 			int heI[3][2] = { { -1 ,-1 },{ -1,-1 },{ -1,-1 } };
@@ -4352,7 +5216,7 @@ void Mesh::findQuaSFValue() {
 						int lVS[2];
 						if (findSLInterPToAuxP(fiter1, fiter, iter1->second, iter->second, auxInterP, interP, lVS) && !dimInterP(interP)) {
 							fNode.push_back(fourNode(interP, fiter1, fiter, lVS, sf[i].faceI));
-							//Á÷ÏßÉÏµÄ½ÚµãÅÅĞò							
+							//æµçº¿ä¸Šçš„èŠ‚ç‚¹æ’åº							
 							int sffIs[2] = { fiter1,fiter };
 							for (int k = 0; k < 2; k++) {
 								if (SLSimplify[sffIs[k]]->interV.size() == 0) {
@@ -4366,7 +5230,7 @@ void Mesh::findQuaSFValue() {
 									double minInterPDis = 1.0e7;
 									int interVI = -1;
 									int kk = 0;
-									//todo:´¦Àí¼ò»¯ºóµÄÁ÷Ïß³öÏÖ¶à´¦×Ô½»Çé¿ö
+									//todo:å¤„ç†ç®€åŒ–åçš„æµçº¿å‡ºç°å¤šå¤„è‡ªäº¤æƒ…å†µ
 									std::map<int, bool> fnodeInfo;
 									for (auto iter1 = SLSimplify[sffIs[k]]->interV.begin(); iter1 != SLSimplify[sffIs[k]]->interV.end(); ++iter1) {
 										fnodeInfo[*iter1] = false;
@@ -4442,7 +5306,7 @@ void Mesh::findQuaSFValue() {
 #endif
 	QuaDimSL();
 }
-//²ÎÊıÒ»ºÍ¶şÎªÁ÷ÏßË÷Òı£¬²ÎÊıÈıÎª¸¨Öúµã£¬²ÎÊıËÄÎª½»µã£¬²ÎÊıÎå¶ÔÓ¦²ÎÊıÒ»¶şÁ÷Ïß½»µãµÄÇ°Ò»¸öÁ÷µãµÄË÷Òı
+//å‚æ•°ä¸€å’ŒäºŒä¸ºæµçº¿ç´¢å¼•ï¼Œå‚æ•°ä¸‰ä¸ºè¾…åŠ©ç‚¹ï¼Œå‚æ•°å››ä¸ºäº¤ç‚¹ï¼Œå‚æ•°äº”å¯¹åº”å‚æ•°ä¸€äºŒæµçº¿äº¤ç‚¹çš„å‰ä¸€ä¸ªæµç‚¹çš„ç´¢å¼•
 bool Mesh::findSLInterPToAuxP(int slI1, int slI2, Vec3 v1, Vec3 v2, Vec3 auxP, Vec3& interP, int lVS[2]) {
 	if (SLSimplify.size() > slI1 && SLSimplify.size() > slI2 && SLSimplify[slI1]->slpc > 1 && SLSimplify[slI2]->slpc > 1) {
 		int minls1DisI1t = SLSimplify[slI1]->startSLPointIndex + 1;
@@ -4489,7 +5353,7 @@ bool Mesh::findSLInterPToAuxP(int slI1, int slI2, Vec3 v1, Vec3 v2, Vec3 auxP, V
 					minls2DisI2.push_back(mk);
 				}
 			}
-			//ÕÒµ½Ïß¶Î	
+			//æ‰¾åˆ°çº¿æ®µ	
 			for (int i = 0; i < minls1DisII.size() - 1; i++) {
 				for (int j = 0; j < minls2DisI2.size() - 1; j++) {
 					if (minls1DisII[i] >= SLSimplify[slI1]->startSLPointIndex && minls1DisII[i + 1] <= SLSimplify[slI1]->endSLPointIndex
@@ -4509,7 +5373,7 @@ bool Mesh::findSLInterPToAuxP(int slI1, int slI2, Vec3 v1, Vec3 v2, Vec3 auxP, V
 	}
 	return false;
 }
-//²ÎÊıÒ»¶şÎªÁ÷ÏßµÄÊ¼Ä©Á½Ææµã£¬²ÎÊıÈıËÄÎªÁ÷µãÊ¼Ä©Á½µã
+//å‚æ•°ä¸€äºŒä¸ºæµçº¿çš„å§‹æœ«ä¸¤å¥‡ç‚¹ï¼Œå‚æ•°ä¸‰å››ä¸ºæµç‚¹å§‹æœ«ä¸¤ç‚¹
 void Mesh::GenQuaSL(int ssI, int esI, int spI, int epI, bool isB, bool dr) {
 	StreamLine* sl = new StreamLine(ssI, esI, spI, epI, isB, 0.0, dr, true);
 	QuaSLInfo.push_back(sl);
@@ -4517,18 +5381,18 @@ void Mesh::GenQuaSL(int ssI, int esI, int spI, int epI, bool isB, bool dr) {
 void Mesh::QuaDimSL() {
 	quaSLs.clear();
 	QuaSLInfo.clear();
-	int k = 0;			//È«¾ÖÁ÷ÏßÊıÁ¿Ë÷Òı
+	int k = 0;			//å…¨å±€æµçº¿æ•°é‡ç´¢å¼•
 	for (auto iter = SLSimplify.begin(); iter != SLSimplify.end(); ++iter, ++k) {
 		if (k == 21) {
 			k = 21;
 		}
 		if ((*iter)->interV.size() > 0) {
-			//·Ö¸î³ÉinterV.size()+1Á÷Ïß¶Î
+			//åˆ†å‰²æˆinterV.size()+1æµçº¿æ®µ
 			int slssI = (*iter)->startSingularIndex;
 			int slseI = (*iter)->endSingularIndex;
 			int slspI = (*iter)->startSLPointIndex;
 			//showQuaSL.push_back(showSSL[(*iter)->startSLPointIndex]);
-			//ĞŞ¸ÄÆæµã¼ÇÂ¼µÄÁ÷ÏßĞÅÏ¢
+			//ä¿®æ”¹å¥‡ç‚¹è®°å½•çš„æµçº¿ä¿¡æ¯
 			//bool asdf = false;
 			for (int i = 0; i < 5; i++) {
 				if (dirSV[slssI]->streamLines[i] == k) {
@@ -4537,7 +5401,7 @@ void Mesh::QuaDimSL() {
 					break;
 				}
 			}
-			//todo:´¦Àí¼ò»¯ºóµÄÁ÷Ïß³öÏÖ¶à´¦×Ô½»Çé¿ö
+			//todo:å¤„ç†ç®€åŒ–åçš„æµçº¿å‡ºç°å¤šå¤„è‡ªäº¤æƒ…å†µ
 			std::map<int, bool> uequSLInfo;
 			for (int i = 0; i < (*iter)->interV.size(); i++) {
 				uequSLInfo[(*iter)->interV[i]] = false;
@@ -4558,7 +5422,7 @@ void Mesh::QuaDimSL() {
 				}
 				int fiisI = fNode[(*iter)->interV[i]].singularI;
 				if (fiisI != -1) {
-					//ÒÑ¾­½¨Á¢Ææµã
+					//å·²ç»å»ºç«‹å¥‡ç‚¹
 					for (int i = 1; i < 4; i++) {
 						if (dirSV[fiisI]->streamLines[i] == -1) {
 							dirSV[fiisI]->streamLines[i] = QuaSLInfo.size();
@@ -4569,11 +5433,11 @@ void Mesh::QuaDimSL() {
 					}
 				}
 				else {
-					//½¨Á¢ĞÂÆæµã
+					//å»ºç«‹æ–°å¥‡ç‚¹
 					Singular* sv = new Singular();
 					sv->pos = fNode[(*iter)->interV[i]].pos;
 					sv->streamLines[0] = QuaSLInfo.size();
-					sv->streamLines[1] = QuaSLInfo.size() + 1;//Á÷Ïß½ø³ö£¬ĞÎ³ÉÁ½ÌõÁ÷Ïß
+					sv->streamLines[1] = QuaSLInfo.size() + 1;//æµçº¿è¿›å‡ºï¼Œå½¢æˆä¸¤æ¡æµçº¿
 					sv->faceI = fNode[(*iter)->interV[i]].faceI;
 					sv->svt = singularType::SV_FOU;
 					if (!createSV(sv)) {
@@ -4626,27 +5490,27 @@ void Mesh::QuaDimSL() {
 			}
 		}
 	}
-	//½¨Á¢±ß½ç»®·ÖÁ÷Ïß
+	//å»ºç«‹è¾¹ç•Œåˆ’åˆ†æµçº¿
 	for (int i = 0; i < dirSV.size(); i++) {
 		if (dirSV[i]->faceI == -3 || dirSV[i]->faceI == -4 || dirSV[i]->faceI == -2) {
-			//¸ÃÆæµãÎª±ß½ç·ÖÇø½Úµã
-			//Í¨¹ıÑ°ÕÒÁ÷ÏßÊ½·½·¨£¬À´Ñ°ÕÒ»®·ÖÁ÷Ïß				
+			//è¯¥å¥‡ç‚¹ä¸ºè¾¹ç•Œåˆ†åŒºèŠ‚ç‚¹
+			//é€šè¿‡å¯»æ‰¾æµçº¿å¼æ–¹æ³•ï¼Œæ¥å¯»æ‰¾åˆ’åˆ†æµçº¿				
 			if (dirSV[i]->vertI >= 0) {
-				findBSL(i, dirSV[i]->vertI, true);			//ÄæÊ±Õë
-				findBSL(i, dirSV[i]->vertI, false);			//Ë³Ê±Õë				
+				findBSL(i, dirSV[i]->vertI, true);			//é€†æ—¶é’ˆ
+				findBSL(i, dirSV[i]->vertI, false);			//é¡ºæ—¶é’ˆ				
 			}
 			else if (dirSV[i]->edgeI >= 0) {
 				findBSL(i, halfEdges[dirSV[i]->edgeI]->vertI, true);
 				findBSL(i, halfEdges[halfEdges[dirSV[i]->edgeI]->frontI]->vertI, false);
 			}
 			else {
-				//³ö´í
+				//å‡ºé”™
 				qDebug("program error!");
 			}
 		}
 	}
 	//end
-	//»æÖÆ·Ö½âÎÊÌâÓò	
+	//ç»˜åˆ¶åˆ†è§£é—®é¢˜åŸŸ	
 	for (int i = 0; i < QuaSLInfo.size(); i++) {
 		int j = QuaSLInfo[i]->startSLPointIndex;
 		for (; j < QuaSLInfo[i]->endSLPointIndex; j++) {
@@ -4656,7 +5520,7 @@ void Mesh::QuaDimSL() {
 	}
 	//isGenSingular = false;
 	isGenQua = true;
-	//ÔİÊ±·Å×Å
+	//æš‚æ—¶æ”¾ç€
 	preGenQuaStatec();
 	//isFourMesh = arrSLOrder() >= 0;
 }
@@ -4672,13 +5536,13 @@ void Mesh::auxFindBSL(int svI1, int svI2, bool dir, int slspI, int slepI) {
 		dirSV[svI1]->streamLines[4] = QuaSLInfo.size() - 1;
 	}
 }
-//vertI£ºÆğµãÎ»ÖÃ
-//dir£ºÁ÷Ïß·½Ïò
+//vertIï¼šèµ·ç‚¹ä½ç½®
+//dirï¼šæµçº¿æ–¹å‘
 void Mesh::findBSL(int svI, int vertI, bool dir) {
 	if (((dirSV[svI]->faceI == -3 || dirSV[svI]->faceI == -4 || dirSV[svI]->faceI == -2) && ((dir && dirSV[svI]->streamLines[3] == -1) || (!dir && dirSV[svI]->streamLines[4] == -1)))) {
 		int slCount = quaSLs.size();
 		quaSLs.push_back(dirSV[svI]->pos);
-		//´¦ÀíÏ¸½Ú´¦						
+		//å¤„ç†ç»†èŠ‚å¤„						
 		if (dirSV[svI]->edgeI >= 0) {
 			double minDisVToP = 1.0e7;
 			int targetSVI = -1;
@@ -4699,14 +5563,14 @@ void Mesh::findBSL(int svI, int vertI, bool dir) {
 				return;
 			}
 		}
-		//´¦ÀíÆğÊ¼Çé¿ö		
+		//å¤„ç†èµ·å§‹æƒ…å†µ		
 		//end
 		if (dirSV[svI]->vertI != vertI) {
 			quaSLs.push_back(halfVerts[vertI]->pos);
 		}
 		int curPI = vertI;
 		do {
-			//Ïß¼à²â±ßÄÚÇé¿ö£¬ÔÚ¿¼ÂÇÏÂÒ»¸öµã		
+			//çº¿ç›‘æµ‹è¾¹å†…æƒ…å†µï¼Œåœ¨è€ƒè™‘ä¸‹ä¸€ä¸ªç‚¹		
 			for (int i = 0; i < dirSV.size(); i++) {
 				if ((i == svI && quaSLs.size() - slCount > 3) || i != svI) {
 					if (dirSV[i]->faceI == -3 && dirSV[i]->edgeI >= 0) {
@@ -4783,7 +5647,7 @@ bool Mesh::JudgeTAIA(double gp, bool is) {
 	if (isFourMesh) {
 		if (is) {
 			for (int i = 0; i < QuaSLInfo.size(); i++) {
-				//¸üĞÂÁ÷Ïß³¤¶È
+				//æ›´æ–°æµçº¿é•¿åº¦
 				double distanceSl = 0.0;
 				for (int j = QuaSLInfo[i]->auxStartSLPI; j < QuaSLInfo[i]->auxEndSLPI; j++) {
 					distanceSl += (quaCareSLs[j + 1].pos - quaCareSLs[j].pos).norm();
@@ -4822,7 +5686,7 @@ bool Mesh::JudgeTAIA(double gp, bool is) {
 	return false;
 }
 void Mesh::genQuaMesh() {
-	//´ÖËÄ±ßĞÎÊÇÕı³£µÄ
+	//ç²—å››è¾¹å½¢æ˜¯æ­£å¸¸çš„
 	isGenQuaMesh = false;
 	if (isTAIA) {
 		std::vector<PCPoint>().swap(quaCareSLs);
@@ -4854,7 +5718,7 @@ void Mesh::genQuaMesh() {
 	}
 }
 void Mesh::updateLikeSLInfo(std::vector<int> sla) {
-	//²¹³äÀàÇúÏßĞÅÏ¢
+	//è¡¥å……ç±»æ›²çº¿ä¿¡æ¯
 	int slTypeSelSVI = -1;
 	int iter3_selI = -1;
 	for (int iter = 0; iter < sla.size(); iter++) {
@@ -4959,12 +5823,12 @@ bool Mesh::findOpSLI(int slI, int opSLI[]) {
 	if (slI >= 0 && slI < QuaSLInfo.size()) {
 		int i = slI;
 		int svse[2] = { QuaSLInfo[i]->startSingularIndex ,QuaSLInfo[i]->endSingularIndex };
-		//ÎªÁË¹ıÂË¸ÉÈÅÏî				
+		//ä¸ºäº†è¿‡æ»¤å¹²æ‰°é¡¹				
 		int getSLDirValue[2];
 		getSLDir(slI, getSLDirValue);
 		Vec3 dirSLN[2] = { (quaSLs[getSLDirValue[0] + 1].pos - quaSLs[getSLDirValue[0]].pos).normalized(),(quaSLs[getSLDirValue[1] - 1].pos - quaSLs[getSLDirValue[1]].pos).normalized() };
 		if (svse[0] >= 0 && svse[1] >= 0 && svse[0] < dirSV.size() && svse[1] < dirSV.size()) {
-			bool isQua = false;			//falseÎªÎŞËÄ±ßĞÎ				
+			bool isQua = false;			//falseä¸ºæ— å››è¾¹å½¢				
 			std::vector<std::pair<int, int>> aloaV[2];
 			for (int k = 0; k < 2; k++) {
 				std::vector<ToOrderDIV> maxValueT;
@@ -4990,7 +5854,7 @@ bool Mesh::findOpSLI(int slI, int opSLI[]) {
 				else {
 					int maxValueTIndex[2] = { maxValueT[0].sI,-1 };
 					if (maxValueT.size() == 4 && !calParToP(maxValueT[0].dir, maxValueT[1].dir, dirSLN[k]) && maxValueT[0].dir*maxValueT[1].dir > -0.866) {
-						//ÆäÖĞ-0.866ÒâÒåÔÚÓÚ·ÀÖ¹ÅĞ¶ÏµÄ·½Ïò½Ó½üÏà·´£¬´Ó¶øÆÆ»µÅĞ¶ÏµÄºÏÀíĞÔ
+						//å…¶ä¸­-0.866æ„ä¹‰åœ¨äºé˜²æ­¢åˆ¤æ–­çš„æ–¹å‘æ¥è¿‘ç›¸åï¼Œä»è€Œç ´ååˆ¤æ–­çš„åˆç†æ€§
 						maxValueTIndex[1] = maxValueT[2].sI;
 					}
 					else if (maxValueT.size() > 1) {
@@ -5022,7 +5886,7 @@ bool Mesh::findOpSLI(int slI, int opSLI[]) {
 						for (int j = 0; j < 2; j++) {
 							for (int jj = 0; jj < 2; jj++) {
 								if (fsTir[j][jj] >= 0) {
-									//Èı½ÇÇøÓò
+									//ä¸‰è§’åŒºåŸŸ
 									if (QuaSLInfo[i]->isBorder && QuaSLInfo[j == 0 ? iter2->second : iter1->second]->isBorder && QuaSLInfo[fsTir[j][jj]]->isBorder) {
 										continue;
 									}
@@ -5037,9 +5901,9 @@ bool Mesh::findOpSLI(int slI, int opSLI[]) {
 						findSLToSV((*iter1).first, (*iter2).first, fsIArray);
 						int fsI = -1;
 						if (fsIArray[1] >= 0) {
-							//´ËÊ±»ñµÃÁ½ÌõÁ÷ÏßË÷Òı
+							//æ­¤æ—¶è·å¾—ä¸¤æ¡æµçº¿ç´¢å¼•
 							//19.5.16
-							//ÔÚ½¨Á¢±ß½çÈ¥ÏòÉÏ±ØĞëÓĞÈı¸öµãºó£¬ÒÔÏÂÇé¿ö²»´æÔÚ
+							//åœ¨å»ºç«‹è¾¹ç•Œå»å‘ä¸Šå¿…é¡»æœ‰ä¸‰ä¸ªç‚¹åï¼Œä»¥ä¸‹æƒ…å†µä¸å­˜åœ¨
 							if (QuaSLInfo[fsIArray[0]]->isBorder && QuaSLInfo[fsIArray[1]]->isBorder) {
 								Vec3 spi1 = quaSLs[QuaSLInfo[fsIArray[0]]->slpc / 2 + QuaSLInfo[fsIArray[0]]->startSLPointIndex].pos;
 								Vec3 spi2 = quaSLs[QuaSLInfo[fsIArray[1]]->slpc / 2 + QuaSLInfo[fsIArray[1]]->startSLPointIndex].pos;
@@ -5097,7 +5961,7 @@ bool Mesh::findOpSLI(int slI, int opSLI[]) {
 										}
 									}
 									else {
-										//¹ıÂË±ß½çÇé¿ö£º³öÏÖÈçÏÂÇé¿öÊÇ±ß½çÇúÏßÖ»ÓĞÁ½¸öµãÊ±
+										//è¿‡æ»¤è¾¹ç•Œæƒ…å†µï¼šå‡ºç°å¦‚ä¸‹æƒ…å†µæ˜¯è¾¹ç•Œæ›²çº¿åªæœ‰ä¸¤ä¸ªç‚¹æ—¶
 										int quaSl_iter1 = -1;
 										int quaslbc = 0;
 										for (int quaSL_iter2 = 0; quaSL_iter2 < 4; quaSL_iter2++) {
@@ -5149,7 +6013,7 @@ bool Mesh::findOpSLI(int slI, int opSLI[]) {
 				}
 			}
 			if (!isQua) {
-				//²»´æÔÚËÄ±ßĞÎ
+				//ä¸å­˜åœ¨å››è¾¹å½¢
 				findErrorId(i);
 				return false;
 			}
@@ -5185,7 +6049,7 @@ void Mesh::preGenQuaStatec() {
 		}
 	}
 }
-//ÈİÆ÷£ºµÚÒ»¸ö²ÎÊıÈİÆ÷ÎªÊôÓÚ¸ÃÀàµÄÁ÷Ïß£¬µÚ¶ş¸ö²ÎÊıÎª¸ÃÀàµÄÁ÷ÏßÊı£¨°üÀ¨Ê×Î²¶Ëµã£©
+//å®¹å™¨ï¼šç¬¬ä¸€ä¸ªå‚æ•°å®¹å™¨ä¸ºå±äºè¯¥ç±»çš„æµçº¿ï¼Œç¬¬äºŒä¸ªå‚æ•°ä¸ºè¯¥ç±»çš„æµçº¿æ•°ï¼ˆåŒ…æ‹¬é¦–å°¾ç«¯ç‚¹ï¼‰
 int Mesh::arrSLOrder() {
 	int slTypeI = 0;
 	quadraInfo.clear();
@@ -5196,7 +6060,7 @@ int Mesh::arrSLOrder() {
 	std::vector<std::vector<int>> slSet;
 	std::vector<double> slSetToPC;
 	for (int i = 0; i < quaSLInfoC; i++) {
-		//¸üĞÂÁ÷Ïß³¤¶È
+		//æ›´æ–°æµçº¿é•¿åº¦
 		double distanceSl = 0.0;
 		for (int j = QuaSLInfo[i]->startSLPointIndex; j < QuaSLInfo[i]->endSLPointIndex; j++) {
 			distanceSl += (quaSLs[j + 1].pos - quaSLs[j].pos).norm();
@@ -5205,7 +6069,7 @@ int Mesh::arrSLOrder() {
 		QuaSLInfo[i]->typeSL = -1;
 	}
 	for (int i = 0; i < quaSLInfoC; i++) {
-		//ÀûÓÃÁ÷ÏßÁ½¶Ëµã½øĞĞ¾Ö²¿Ñ°ÕÒ¶Ô±ß		
+		//åˆ©ç”¨æµçº¿ä¸¤ç«¯ç‚¹è¿›è¡Œå±€éƒ¨å¯»æ‰¾å¯¹è¾¹		
 		if (QuaSLInfo[i]->typeSL == -1) {
 			QuaSLInfo[i]->typeSL = slTypeI;
 			slTypeS.clear();
@@ -5250,7 +6114,7 @@ int Mesh::arrSLOrder() {
 				return -1;
 			}
 			else {
-				//ĞèÒªÔÚ´ËÎª¼ÇÂ¼µÄÁ÷Ïß°´¶ÎÊı´óĞ¡ÅÅĞò£ºÒÀ´ÎÔö´ó
+				//éœ€è¦åœ¨æ­¤ä¸ºè®°å½•çš„æµçº¿æŒ‰æ®µæ•°å¤§å°æ’åºï¼šä¾æ¬¡å¢å¤§
 				std::sort(slTypeS.begin(), slTypeS.end(), compToOrderDUp);
 				std::vector<int> tempSSLI;
 				for (int k = 0; k < slTypeS.size(); k++) {
@@ -5275,22 +6139,22 @@ int Mesh::arrSLOrder() {
 		}
 		slType.insert(std::pair<std::vector<int>, slType_Secand>(slSet[i], slType_Secand(slSetToPC[i], bslnp)));
 	}
-	return slTypeI;	//Àà±ğÊı
+	return slTypeI;	//ç±»åˆ«æ•°
 }
 void Mesh::standardSL(int slI, int slC, bool isOk) {
-	//slC£º×é³ÉÁ÷ÏßµÄÁ÷µãÊı£¬¶ÎÊıÎªslC-1
+	//slCï¼šç»„æˆæµçº¿çš„æµç‚¹æ•°ï¼Œæ®µæ•°ä¸ºslC-1
 	if (slI >= 0 && slI < QuaSLInfo.size() && slC >= 2) {
 		double curSLSegDis = 0.0;
 		double IsoSLSegDis = 0.0;
 		std::vector<double> slSegDis;
 		if (!isOk) {
-			IsoSLSegDis = QuaSLInfo[slI]->distanceSL / (slC - 1);	//µÈ¾à
+			IsoSLSegDis = QuaSLInfo[slI]->distanceSL / (slC - 1);	//ç­‰è·
 			for (int i = 0; i < slC - 1; i++) {
 				slSegDis.push_back(IsoSLSegDis);
 			}
 		}
 		else {
-			//Ğè×ö³ÉÊı×é
+			//éœ€åšæˆæ•°ç»„
 			IsoSLSegDis = QuaSLInfo[slI]->distanceSL / ((slC - 1)*slC / 2);
 			int sln1, sln2;
 			double isoDis = QuaSLInfo[slI]->selSLSegR*QuaSLInfo[slI]->distanceSL;
@@ -5338,7 +6202,7 @@ void Mesh::standardSL(int slI, int slC, bool isOk) {
 			//asdfDis = asdfDis;
 		}
 		double auxIsoSLSegDis = IsoSLSegDis;
-		double ccurSLSegDis = 0.0;					//µ±Ç°ĞĞ½ø¾àÀë		
+		double ccurSLSegDis = 0.0;					//å½“å‰è¡Œè¿›è·ç¦»		
 		double leftSLSegDis = 0.0;
 		int curSQMSLC = quaCareSLs.size();
 		quaCareSLs.push_back(quaSLs[QuaSLInfo[slI]->startSLPointIndex].pos);
@@ -5383,11 +6247,11 @@ void Mesh::standardSL(int slI, int slC, bool isOk) {
 	}
 }
 void Mesh::GenRoughQua(int slp1, int slp2, int slp3, int slp4, int slI1, int slI2, int slI3, int slI4) {
-	//²ÎÊıÒ»ÖÁËÄÎªË³ĞòÁ÷µãË÷Òı£¬²ÎÊıÎåÖÁ°ËÎª¶ÔÓ¦Á÷µã¼äµÄÁ÷ÏßË÷Òı
-	//ÈôÊÇÇÒÎ´¼ÇÂ¼¸ÃËÄ±ßĞÎ£¬Ôò¼ÇÂ¼£¬·ñÔò·µ»Øfalse
-	//º¯ÊıÊ¹ÓÃÎ»ÖÃ£¬Î»ÓÚ´ÖËÄ±ßĞÎ±ßµÄ¶Ô±ßÑ°ÕÒÎ»ÖÃ
-	//ÔÚ¼ÇÂ¼ËÄ±ßĞÎ½á¹¹Ê±£¬´æ´¢Ë³ĞòÎªÄæÊ±Õë»òË³Ê±Õë£¬²¢ÇÒ±êÃ÷ÒÀ¾İ´æ´¢½ÚµãµÄÁ÷Ïß¡°Õı·´¡±
-	//ÔÚÊ¹ÓÃ¸Ãº¯ÊıµÄ×î´óÔ¼ÊøÊÇÄ¬ÈÏ¸Ã´ÖËÄ±ßĞÎ·ûºÏÌõ¼ş
+	//å‚æ•°ä¸€è‡³å››ä¸ºé¡ºåºæµç‚¹ç´¢å¼•ï¼Œå‚æ•°äº”è‡³å…«ä¸ºå¯¹åº”æµç‚¹é—´çš„æµçº¿ç´¢å¼•
+	//è‹¥æ˜¯ä¸”æœªè®°å½•è¯¥å››è¾¹å½¢ï¼Œåˆ™è®°å½•ï¼Œå¦åˆ™è¿”å›false
+	//å‡½æ•°ä½¿ç”¨ä½ç½®ï¼Œä½äºç²—å››è¾¹å½¢è¾¹çš„å¯¹è¾¹å¯»æ‰¾ä½ç½®
+	//åœ¨è®°å½•å››è¾¹å½¢ç»“æ„æ—¶ï¼Œå­˜å‚¨é¡ºåºä¸ºé€†æ—¶é’ˆæˆ–é¡ºæ—¶é’ˆï¼Œå¹¶ä¸”æ ‡æ˜ä¾æ®å­˜å‚¨èŠ‚ç‚¹çš„æµçº¿â€œæ­£åâ€
+	//åœ¨ä½¿ç”¨è¯¥å‡½æ•°çš„æœ€å¤§çº¦æŸæ˜¯é»˜è®¤è¯¥ç²—å››è¾¹å½¢ç¬¦åˆæ¡ä»¶
 	for (auto iter = quadraInfo.begin(); iter != quadraInfo.end(); ++iter) {
 		int i = 0;
 		for (; i < 5; i++) {
@@ -5401,7 +6265,7 @@ void Mesh::GenRoughQua(int slp1, int slp2, int slp3, int slp4, int slI1, int slI
 		else {
 			if ((slp2 == iter->slP[(i + 1) % 4] && slp3 == iter->slP[(i + 2) % 4] && slp4 == iter->slP[(i + 3) % 4]) ||
 				(slp2 == iter->slP[(i + 3) % 4] && slp3 == iter->slP[(i + 2) % 4] && slp4 == iter->slP[(i + 1) % 4])) {
-				//Ë³Ğò´æÔÚÄæ·´
+				//é¡ºåºå­˜åœ¨é€†å
 				return;
 			}
 		}
@@ -5428,26 +6292,26 @@ void Mesh::GenCareQua() {
 		quaMinYkbA = 1.0;
 		quaMinYkbB = 1.0;
 		smoIterTimes = 0;
-		//ÓÉÓÚĞèÒª½¨Á¢Ï¸ËÄ±ßĞÎµÄÍØÆË½á¹¹£¬Òò´Ë£¬ĞèÒª¼ÇÂ¼¡°ÒÑ¾­ÕÒµ½µÄµã¡±£¬¼´Á÷ÏßÉÏµÄµã
+		//ç”±äºéœ€è¦å»ºç«‹ç»†å››è¾¹å½¢çš„æ‹“æ‰‘ç»“æ„ï¼Œå› æ­¤ï¼Œéœ€è¦è®°å½•â€œå·²ç»æ‰¾åˆ°çš„ç‚¹â€ï¼Œå³æµçº¿ä¸Šçš„ç‚¹
 		std::vector<int> quaslPI;
 		quaslPI.clear();
 		quaslPI.reserve(quaCareSLs.size());
 		for (int i = 0; i < quaCareSLs.size(); i++) {
 			quaslPI.push_back(-1);
 		}
-		//ÏÈ½«½ÚµãÌí¼Ó
+		//å…ˆå°†èŠ‚ç‚¹æ·»åŠ 
 		for (int i = 0; i < dirSV.size(); i++) {
 			int vertTypeP = dirSV[i]->faceI == -3 ? 1 : dirSV[i]->faceI == -2 || dirSV[i]->faceI == -4 ? 2 : 0;
 			careQuaMeshP.push_back(vertAloa(dirSV[i]->pos, vertTypeP, -1));
 			//careQuaMeshColor.push_back(careQuaColor);
 		}
-		//Ìí¼Ó½ÚµãË÷Òı
+		//æ·»åŠ èŠ‚ç‚¹ç´¢å¼•
 		for (int i = 0; i < QuaSLInfo.size(); i++) {
 			quaslPI[QuaSLInfo[i]->auxStartSLPI] = QuaSLInfo[i]->startSingularIndex;
 			quaslPI[QuaSLInfo[i]->auxEndSLPI] = QuaSLInfo[i]->endSingularIndex;
 		}
-		int quaBlc = 0;	//ËÄ±ßĞÎÍø¸ñ±ß½ç¶ÎÊı
-		int likeQuadraInfo = 0;	//ÎªÁË¸øÀàËÄ±ßĞÎÌîÉ«		
+		int quaBlc = 0;	//å››è¾¹å½¢ç½‘æ ¼è¾¹ç•Œæ®µæ•°
+		int likeQuadraInfo = 0;	//ä¸ºäº†ç»™ç±»å››è¾¹å½¢å¡«è‰²		
 		for (auto iter = quadraInfo.begin(); iter != quadraInfo.end(); ++iter, ++likeQuadraInfo) {
 			int cols = QuaSLInfo[iter->slI[0]]->aslpc - 1;
 			int rows = QuaSLInfo[iter->slI[1]]->aslpc - 1;
@@ -5458,21 +6322,21 @@ void Mesh::GenCareQua() {
 				isBSL[i] = QuaSLInfo[ii]->isBorder;
 				qisI[i][0] = QuaSLInfo[ii]->auxStartSLPI;
 				qisI[i][1] = QuaSLInfo[ii]->auxEndSLPI;
-				//¼ÇÂ¼±ß½çÊı
+				//è®°å½•è¾¹ç•Œæ•°
 				if (isBSL[i]) {
 					quaBlc += QuaSLInfo[ii]->aslpc - 1;
 				}
 			}
 			int cqpc = careQuaMeshP.size();
-			bool dirG[4];	//Á÷Ïß×ßÏò
-			std::vector<int> colrowPI[4];	//¼ÇÂ¼Á÷ÏßÁ÷µãË÷Òı£¬¸ÃË÷ÒıÓëÏ¸·ÖËÄ±ßĞÎÊ±Ïà¶ÔÓ¦
+			bool dirG[4];	//æµçº¿èµ°å‘
+			std::vector<int> colrowPI[4];	//è®°å½•æµçº¿æµç‚¹ç´¢å¼•ï¼Œè¯¥ç´¢å¼•ä¸ç»†åˆ†å››è¾¹å½¢æ—¶ç›¸å¯¹åº”
 			for (int i = 0; i < 4; i++) {
 				bool bqissIis = QuaSLInfo[iter->slI[i]]->startSingularIndex == iter->slP[i];
 				dirG[i] = bqissIis;
-				//½¨Á¢Á÷ÏßµãµÄË÷Òı
+				//å»ºç«‹æµçº¿ç‚¹çš„ç´¢å¼•
 				int j = qisI[i][0];
 				if (isBSL[i]) {
-					//ÓÉÓÚÊÇ±ß½ç£¬ËùÒÔÖ»´æÔÚÒ»¸öµ¥Ôª£¨ËÄ±ßĞÎ£©
+					//ç”±äºæ˜¯è¾¹ç•Œï¼Œæ‰€ä»¥åªå­˜åœ¨ä¸€ä¸ªå•å…ƒï¼ˆå››è¾¹å½¢ï¼‰
 					int curCQMPI = careQuaMeshP.size();
 					int startCQPI, endCQPI;
 					if ((i < 2 && bqissIis) || (i >= 2 && !bqissIis)) {
@@ -5487,7 +6351,7 @@ void Mesh::GenCareQua() {
 					QuaSLInfo[iter->slI[i]]->auxQBT.init(startCQPI, endCQPI, curCQMPI, curCQMPI + qisI[i][1] - qisI[i][0] - 1);
 				}
 				if (quaslPI[j + 1] != -1) {
-					//+1Ä¿µÄ£ºÅĞ¶Ï¸ÃÁ÷ÏßÊÇ·ñÒÑ¾­±»±ê¼Ç¹ı
+					//+1ç›®çš„ï¼šåˆ¤æ–­è¯¥æµçº¿æ˜¯å¦å·²ç»è¢«æ ‡è®°è¿‡
 					if ((i < 2 && bqissIis) || (i >= 2 && !bqissIis)) {
 						for (int k = j; k <= qisI[i][1]; k++) {
 							colrowPI[i].push_back(quaslPI[k]);
@@ -5523,7 +6387,7 @@ void Mesh::GenCareQua() {
 					}
 				}
 			}
-			//·ÖÀë³öËÄÌõÁ÷Ïß£¬²¢°´ÕÕÒ»¶¨¹æÔò¡°ÅÅĞò¡±£¬ÕıÕı¸º¸º
+			//åˆ†ç¦»å‡ºå››æ¡æµçº¿ï¼Œå¹¶æŒ‰ç…§ä¸€å®šè§„åˆ™â€œæ’åºâ€ï¼Œæ­£æ­£è´Ÿè´Ÿ
 			std::vector<Vec3> colP[2];
 			std::vector<Vec3> rowP[2];
 			for (int i = 0; i < cols + 1; i++) {
@@ -5534,9 +6398,9 @@ void Mesh::GenCareQua() {
 				rowP[0].push_back(quaCareSLs[dirG[1] ? qisI[1][0] + i : qisI[1][1] - i].pos);
 				rowP[1].push_back(quaCareSLs[dirG[3] ? qisI[3][1] - i : qisI[3][0] + i].pos);
 			}
-			bool orderQuaInfo = false; //true£º¿ÉÓÃ¡¢false£º²»¿ÉÓÃ
-			bool orderUQuaInfo = true;	//true£ºÄæÊ±Õë¡¢false£ºË³Ê±Õë
-										//Í¨¹ıÖğµã·½·¨Çó½â¿ÉÖª£¬¿ÉÔ¤ÏÈÖªµÀÒÑ´æÔÚµÄÈı¸öµãË÷Òı	
+			bool orderQuaInfo = false; //trueï¼šå¯ç”¨ã€falseï¼šä¸å¯ç”¨
+			bool orderUQuaInfo = true;	//trueï¼šé€†æ—¶é’ˆã€falseï¼šé¡ºæ—¶é’ˆ
+										//é€šè¿‡é€ç‚¹æ–¹æ³•æ±‚è§£å¯çŸ¥ï¼Œå¯é¢„å…ˆçŸ¥é“å·²å­˜åœ¨çš„ä¸‰ä¸ªç‚¹ç´¢å¼•	
 			if (cols == 1 || rows == 1) {
 				cols = cols;
 			}
@@ -5564,10 +6428,10 @@ void Mesh::GenCareQua() {
 						}
 						GenPoPAloa(cQMPI, orderUQuaInfo);
 						//careQuaMeshColor.push_back(careQuaColor);
-						//¸üĞÂ²Î¿¼Êı×é
+						//æ›´æ–°å‚è€ƒæ•°ç»„
 						colrowPI[3][j - 1] = cQMPI[1];
 						colrowPI[3][j] = cQMPI[2];
-						//¸üĞÂÄ£°åË÷Òı
+						//æ›´æ–°æ¨¡æ¿ç´¢å¼•
 						cQMPI[0] = cQMPI[3];
 						cQMPI[1] = cQMPI[2];
 						cQMPI[3] = colrowPI[3][j + 1];
@@ -5601,7 +6465,7 @@ void Mesh::GenCareQua() {
 						GenPoPAloa(cQMPI, orderUQuaInfo);
 						cQMPI[0] = cQMPI[3];
 						cQMPI[1] = cQMPI[2];
-						if (j != rows)		//·ÀÖ¹·ÃÎÊÔ½½ç
+						if (j != rows)		//é˜²æ­¢è®¿é—®è¶Šç•Œ
 							cQMPI[3] = colrowPI[3][j + 1];
 					}
 				}
@@ -5766,7 +6630,7 @@ void Mesh::setLikeCareQuaStruct() {
 int Mesh::smoothMesh() {
 	if (isFinish) {
 		//end
-		//ÊÖ¶¯ÊäÈëµü´ú´ÎÊı
+		//æ‰‹åŠ¨è¾“å…¥è¿­ä»£æ¬¡æ•°
 		bool isOK;
 		QString text = QInputDialog::getText(NULL, "Input Dialog",
 			"iter number:(int)",
@@ -5810,7 +6674,7 @@ int Mesh::smoothMesh() {
 						tempCQPV += careQuaMeshP[careQuaMeshP[i].vaI[j]].npos;
 					}
 					if (careQuaMeshP[i].napt > 3) {
-						//·Ç±ß½çÇé¿ö
+						//éè¾¹ç•Œæƒ…å†µ
 						//careQuaMeshP[i].pos = tempCQPV / careQuaMeshP[i].npt;
 						careQuaMeshP[i].npos = (careQuaMeshP[i].npos + tempCQPV / careQuaMeshP[i].napt)*0.5;
 						if (cpvtC == 2) {
@@ -5846,7 +6710,7 @@ int Mesh::smoothMesh() {
 			}
 		}
 		smoIterTimes += timesIter;
-		//¸üĞÂËÄ±ßĞÎÖÊÁ¿	
+		//æ›´æ–°å››è¾¹å½¢è´¨é‡	
 		quaMinAngle = 180.0;
 		quaMinYkbA = 1.0;
 		quaMinYkbB = 1.0;
@@ -6569,21 +7433,21 @@ bool Mesh::writeToCFL(QStringList path) {
 		}
 		QTextStream stream(&fp);
 		int pc = vert.size();
-		for (int i = 0; i < pc; ++i) {
+		/*for (int i = 0; i < pc; ++i) {
 			if (halfVerts[i]->vType != 0) {
 				halfVerts[i]->vType = 2;
 			}
 			if (halfVerts[i]->isBoundary) {
 				halfVerts[i]->vType = 1;
 			}
-			/*if (halfVerts[i]->isBoundary) {
+			if (halfVerts[i]->isBoundary) {
 				if (halfVerts[i]->vType != 0) {
 					halfVerts[i]->vType = 11;
 				}
 				else
 					halfVerts[i]->vType = 1;
-			}*/
-		}
+			}
+		}*/
 		Vec3 tv;
 		double max_fabs = 0.0;
 		for (int i = 0; i < pc; ++i) {
@@ -6594,7 +7458,7 @@ bool Mesh::writeToCFL(QStringList path) {
 				max_fabs = fabs(vert[i].pos[1]);
 			}
 		}
-		double rate = 0.999999 / max_fabs;
+		double rate = 1.000000 / max_fabs;
 		double out_x = 0.0;
 		double out_y = 0.0;
 		// double out_z = 0.0;
@@ -6609,7 +7473,7 @@ bool Mesh::writeToCFL(QStringList path) {
 			out_y = vert[i].pos[1] * rate;
 				// out_z = vert[i].pos[2] * rate;
 			
-			stream << qSetRealNumberPrecision(6) << fixed<< out_x << "  " << out_y << "  " << vert[i].pos[2] <<"  " << norm<< "  " << halfVerts[i]->vec[0]*10 << "  " << halfVerts[i]->vec[1] * 10 << "  " << halfVerts[i]->vType << endl;
+			stream /*<< qSetRealNumberPrecision(6) << fixed<< out_x << "  " << out_y << "  " << vert[i].pos[2] <<"  " << norm<< "  " << halfVerts[i]->vec[0]*10 << "  " << halfVerts[i]->vec[1] * 10 << "  " */<< halfVerts[i]->vType << endl;
 		}
 		fp.close();
 		qDebug()<< path[0] + "/" + path[1]<<endl;
@@ -6619,134 +7483,197 @@ bool Mesh::writeToCFL(QStringList path) {
 		return false;
 	}
 }
-void Mesh::showNormClass()
+
+bool Mesh::showInputPoints(QString path)
 {
-	int pc = vert.size();
-	int a[10] = { 0 };
-	for (int i = 0; i < pc; ++i) {
-		Vec3 tv = angleToNorm(halfVerts[i]->vec.angleP() / 4.)*halfVerts[i]->vec.norm();
-		double norm = tv.norm();
-		if (fabs(norm - 0.1) < 0.0000009)
-			norm = 0.100000;
-		norm *= 10;
-		if (norm >= 0 && norm <= 0.1) {
-			a[0]++;
-		}
-		else if (norm > 0.1 && norm <= 0.2) {
-			a[1]++;
-		}
-		else if (norm > 0.2 && norm <= 0.3) {
-			a[2]++;
-		}
-		else if (norm > 0.3 && norm <= 0.4) {
-			a[3]++;
-		}
-		else if (norm > 0.4 && norm <= 0.5) {
-			a[4]++;
-		}
-		else if (norm > 0.5 && norm <= 0.6) {
-			a[5]++;
-		}
-		else if (norm > 0.6 && norm <= 0.7) {
-			a[6]++;
-		}
-		else if (norm > 0.7 && norm <= 0.8) {
-			a[7]++;
-		}
-		else if (norm > 0.8 && norm <= 0.9) {
-			a[8]++;
-		}
-		else if (norm > 0.9 && norm < 1.0) {
-			a[9]++;
-		}
-	}
-	qDebug() << "0-0.1:" << a[0] << "0.1-0.2:" << a[1] << "0.2-0.3:" << a[2] << "0.3-0.4:" << a[3] << "0.4-0.5:" << a[4]
-		<< "0.5-0.6:"<<a[5] << "0.6-0.7:"<<a[6]<<"0.7-0.8:"<<a[7] << "0.8-0.9:"<<a[8] << "0.9-1.0:"<<a[9];
-}
-bool Mesh::highLightCrossField(QString filePath)
-{
-	highLightedCrossField.clear();
-	QFile fp(filePath);
+	renderPoints.clear();
+	double rate = normalVertices[0].normalizeRate;
+	
+	QFile fp(path);
 	if (!fp.open(QIODevice::ReadOnly | QIODevice::Text)) {
-		//QMessageBox::warning(NULL, "warning", "can't open output(writeToCFL) file!", QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
 		return false;
 	}
 	QTextStream in(&fp);
-	QString line = in.readLine();
-	int i = 0;
-	while (!line.isNull()) {
-		if (i < vert.size()) {
-			if (halfVerts[i] != nullptr) {
-				PCPoint temp;
-				temp.pos = halfVerts[i]->pos;
-				if (line.toInt() == 0) {
-					temp.color = Vec3(0.0, 0.9, 0.1);
-				}
-				else if (line.toInt() == 1) {
-					if (halfVerts[i] != nullptr) {
-						temp.color = Vec3(0.9, 0.2, 0.1);
-					}
-				}
-				else if (line.toInt() == 2) {
-					if (halfVerts[i] != nullptr) {
-						temp.color = Vec3(0.1, 0.2, 0.9);
-					}
-				}
-				highLightedCrossField.push_back(temp);
-			}
-			line = in.readLine();
+	QStringList list;
+	int c = 0;
+	while (!in.atEnd()) {
+		list = in.readLine().split(' ', QString::SkipEmptyParts);
+		if (list.empty()) continue;
+		if (list[3].toInt() == 1&& list[4].toInt()!=-1) {
+			PCPoint p;
+	/*		Point3D p3d;
+			Eigen::Vector3d* Vector3d_1;
+			(*Vector3d_1)(0) = list[0].toDouble();
+			(*Vector3d_1)(1) = list[1].toDouble();
+			(*Vector3d_1)(2) = list[2].toDouble();
+			p3d.set_CoordinatesXYZ(Vector3d_1);
+			p3d.set_GlobalID = c++;
+			PointCloud.push_back(p3d);
+			delete Vector3d_1;*/
+			p.pos = Vec3(list[0].toDouble(), list[1].toDouble(), list[2].toDouble())/normalVertices[0].normalizeRate;
+			renderPoints.push_back(p);
 		}
-		else break;
-		i++;
+		
 	}
 	return true;
 }
-bool Mesh::showRelationPoint(QString filePath)
+
+bool Mesh::readBarycenter(QString filePath)
 {
-	highLightedCrossField.clear();
+	highLightedElements.clear();
 	QFile fp(filePath);
 	if (!fp.open(QIODevice::ReadOnly | QIODevice::Text)) {
 		//QMessageBox::warning(NULL, "warning", "can't open output(writeToCFL) file!", QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
 		return false;
 	}
 	QTextStream in(&fp);
-	QString line = in.readLine();
-	int c = 0;
-	while (!line.isNull()) {
-		//if (c == 3) {
-		line = line.trimmed();
-		char idx[512];
-		sprintf(idx, "%s", line.toStdString().data());
-		int id[5];
-		sscanf(idx, "%d %d %d %d %d", &id[0], &id[1], &id[2], &id[3],&id[4]);
+	QStringList list;
 
-		float co = rand() % (99 + 1) / (float)(99 + 1);
-		float co2 = rand() % (99 + 1) / (float)(99 + 1);
-		for (int i = 0; i < 4; i++) {
-			if (i == 1) continue;
-			int t = id[i];
+	while (!in.atEnd()) {
+		list = in.readLine().split(' ');
+		if (list[6].toInt() < 0) continue;
 			PCPoint temp;
-			temp.pos = vert[t].pos;
-			if (i == 0) temp.color = Vec3(0.0, 0.0, 0.0);
-			else temp.color = Vec3(0.8, co, co2*co);
-			highLightedCrossField.push_back(temp);
+			temp.pos[0] = list[0].toDouble();
+			temp.pos[1] = list[1].toDouble();
+			if (list[7].toInt() == 1) {
+				temp.color = Vec3(0.9, 0.2, 0.1);
+			}
+			if (list[7].toInt() == 0) {
+				temp.color = Vec3(0.0, 0.9, 0.1);
+			}
 
-		}
-		Vec3 p1 = vert[id[0]].pos;
-		Vec3 p2 = vert[id[1]].pos;
-		Vec3 p3 = vert[id[2]].pos;
-		Vec3 p4 = vert[id[3]].pos;
-		qDebug() << p1.cptEuclideanDistance(p2) << " " << p1.cptEuclideanDistance(p3) << " " << p3.cptEuclideanDistance(p4) <<" "<<id[4] << endl;
-
-		//}
-
-
-		line = in.readLine();
-		c++;
+			highLightedElements.push_back(temp);
 	}
+}
+
+
+bool Mesh::readLearningResults(QStringList filepaths)
+{
+	allLearningResults.clear();
+	for (int i = 0; i < vert.size(); ++i) {
+		LearningResult cfr(i, -1,-1);
+		cfr.id = i;
+		allLearningResults.push_back(cfr);
+	}
+	for (int i = 0; i < filepaths.size(); i++) {
+		QFile fp(filepaths[i]);
+		if (!fp.open(QIODevice::ReadOnly | QIODevice::Text)) {
+			return false;
+		}
+		QTextStream in(&fp);
+		QStringList list;
+		int c = 0;
+		while (!in.atEnd()) {
+			list = in.readLine().split(' ', QString::SkipEmptyParts);
+			if (list.empty()) continue;
+			int v_id = list[1].toInt();
+			if (v_id == -1) continue;
+			if (allLearningResults[v_id].tag[i] == -1) {
+				allLearningResults[v_id].tag[i] = list[0].toInt();
+				allLearningResults[v_id].frame_vector[i * 2] = list[2].toDouble();
+				allLearningResults[v_id].frame_vector[i * 2 + 1] = list[3].toDouble();
+				if (halfVerts[v_id] != nullptr) {
+					allLearningResults[v_id].vertex_id = v_id;
+					halfVerts[allLearningResults[i].vertex_id]->learningResultId = allLearningResults[v_id].id;
+					//allLearningResults[v_id].fv1_angle_100=Vec3(list[2].toDouble(), list[3].toDouble(), 0.0).cptAngleBtwVec(Vec3(1.0, 0.0, 0.0));
+					//allLearningResults[v_id].prop[i * 2] = list[5].toDouble();
+					//allLearningResults[v_id].prop[i * 2+1] = list[6].toDouble();
+				}
+			}
+			c++;
+		}
+	}
+	for (int i = 0; i < allLearningResults.size(); ++i) {
+		if (!halfVerts[allLearningResults[i].vertex_id]->isBoundary
+			&& allLearningResults[i].tag[0] == 1
+			&& allLearningResults[i].tag[1] == 1) {
+			allLearningResults[i].potential = true;
+		}
+		if ((allLearningResults[i].tag[0] == 1
+			|| allLearningResults[i].tag[1] == 1)
+			&& allLearningResults[i].potential == false) {
+			//potentialTrueResultsIds.push_back(allLearningResults[i].id);
+		}
+	}
+	for (int i = 0; i < face.size(); ++i) {
+		int c = 0;
+		for (int j = 0; j < 3; ++j) {
+			if (halfVerts[face[i].index[j]]->isBoundary) {
+				c = 0;
+				break;
+			}
+			if (halfVerts[face[i].index[j]]->learningResultId != -1
+				&&
+				(allLearningResults[halfVerts[face[i].index[j]]->learningResultId].tag[0] == 1
+					|| allLearningResults[halfVerts[face[i].index[j]]->learningResultId].tag[1] == 1)) {
+				c++;
+			}
+		}
+		if (c >= 2) portentialFaces.push_back(i);
+	}
+}
+
+bool Mesh::showLearningResults(int type)
+{
+	directF.clear();
+	directHandleF.clear();
+	//potentialCrossoverPoints.clear();
+	double dirH = 0.1;
+	double dirB = 0.1;
+	int c = 0;
+	int it_num = 0;
+	if (type==0) {
+		if (allLearningResults.empty()) return false;
+		for (int i = 0; i < allLearningResults.size(); ++i) {
+			for (int j = 0; j < 2; ++j) {
+				if (allLearningResults[i].tag[j] == 1) {
+					Vec3 vPos2 = vert[allLearningResults[i].vertex_id].pos;
+					Vec3 ve = Vec3(allLearningResults[i].frame_vector[j * 2], allLearningResults[i].frame_vector[j * 2 + 1], 0.0);
+					Vec3 vn1 = ve *dirB;// .normalized();
+					double vn1n = vn1.norm();
+					double vnf = ve.angleP();
+					Vec3 vn2 = angleToNorm(vnf > 3.0*Q_PI / 2.0 ? vnf - 3.0*Q_PI / 2.0 : vnf + Q_PI / 2.0);
+					Vec3 vn3 = (vn1.normalized()).normalized();
+					Vec3 vn4 = (vn1.normalized()).normalized();
+					Vec3 endP = vn1 + vPos2;
+					directF.push_back((vn3*0.7071*vn1n + vPos2)*dirH + endP*(1.0 - dirH));
+					directF.push_back((vn4*0.7071*vn1n + vPos2)*dirH + endP*(1.0 - dirH));
+					directF.push_back(endP);
+					directHandleF.push_back(vPos2);
+					directHandleF.push_back(endP);
+				}
+			}
+		}
+	}
+	//else if(type==1){
+	//	if (resultsAfterFilter.empty()) return false;
+	//	for (int i = 0; i < resultsAfterFilter.size(); ++i) {
+	//		int id = resultsAfterFilter[i];
+	//		for (int j = 0; j < 2; ++j) {
+	//			if (allLearningResults[id].tag[j] == 1) {
+	//				Vec3 vPos2 = vert[allLearningResults[id].vertex_id].pos;
+	//				Vec3 ve = Vec3(allLearningResults[id].frame_vector[j * 2], allLearningResults[id].frame_vector[j * 2 + 1], 0.0);
+	//				Vec3 vn1 = ve *dirB;// .normalized();
+	//				double vn1n = vn1.norm();
+	//				double vnf = ve.angleP();
+	//				Vec3 vn2 = angleToNorm(vnf > 3.0*Q_PI / 2.0 ? vnf - 3.0*Q_PI / 2.0 : vnf + Q_PI / 2.0);
+	//				Vec3 vn3 = (vn1.normalized()).normalized();
+	//				Vec3 vn4 = (vn1.normalized()).normalized();
+	//				Vec3 endP = vn1 + vPos2;
+	//				directF.push_back((vn3*0.7071*vn1n + vPos2)*dirH + endP*(1.0 - dirH));
+	//				directF.push_back((vn4*0.7071*vn1n + vPos2)*dirH + endP*(1.0 - dirH));
+	//				directF.push_back(endP);
+	//				directHandleF.push_back(vPos2);
+	//				directHandleF.push_back(endP);
+	//			}
+	//		}
+	//	}
+	//}
+	
 	
 	return true;
 }
+
 void Mesh::setLLSSpec(double spec) {
 	if (spec > 0.0) {
 		llsValue = spec;

@@ -45,6 +45,21 @@ struct Vec3 {
 	double cptEuclideanDistance(const Vec3 &b) {
 		return sqrt((v[0] - b.v[0])*(v[0] - b.v[0]) + (v[1] - b.v[1])*(v[1] - b.v[1]));
 	}
+	double cptAngleBtwVec(const Vec3 &vt) {
+		double a = v[0] * vt.v[0] + v[1] * vt.v[1];
+		double b = sqrt(v[0] * v[0] + v[1] * v[1]) * sqrt(vt.v[0] * vt.v[0] + vt.v[1] * vt.v[1]);
+		if (b == 0) return -1;
+		a = a / b;
+		return acos(a)*(180 / 3.1415926);
+	}
+	Vec3 rotate(double angle) {
+		double ox = 0.0;
+		double oy =0.0;
+		double rz = angle * 3.1415926 / 180;
+		ox = cos(rz) *v[0]  - sin(rz) * v[1];
+		oy = sin(rz) *v[0] + cos(rz) *v[1] ;
+		return Vec3(ox, oy, 0.0);
+	}
 };
 struct pdStr
 {

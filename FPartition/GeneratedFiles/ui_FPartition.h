@@ -36,9 +36,9 @@ public:
     QHBoxLayout *horizontalLayout_20;
     GLArea *glArea;
     QPushButton *Batch;
-    QPushButton *NormClass;
-    QPushButton *HighLightCF;
-    QPushButton *RelationButton;
+    QPushButton *outputIntersection;
+    QPushButton *showChosedCFButton;
+    QPushButton *LineGen;
     QFrame *line;
     QVBoxLayout *verticalLayout_11;
     QComboBox *comboBox;
@@ -55,9 +55,7 @@ public:
     QCheckBox *scalarField;
     QCheckBox *doubtP;
     QCheckBox *showSingular;
-    QCheckBox *PF;
     QCheckBox *AutoFacePick;
-    QCheckBox *CustomCheck;
     QWidget *tab_11;
     QWidget *layoutWidget1;
     QVBoxLayout *verticalLayout;
@@ -243,15 +241,15 @@ public:
         Batch = new QPushButton(glArea);
         Batch->setObjectName(QStringLiteral("Batch"));
         Batch->setGeometry(QRect(730, 10, 61, 20));
-        NormClass = new QPushButton(glArea);
-        NormClass->setObjectName(QStringLiteral("NormClass"));
-        NormClass->setGeometry(QRect(730, 39, 61, 21));
-        HighLightCF = new QPushButton(glArea);
-        HighLightCF->setObjectName(QStringLiteral("HighLightCF"));
-        HighLightCF->setGeometry(QRect(720, 70, 75, 23));
-        RelationButton = new QPushButton(glArea);
-        RelationButton->setObjectName(QStringLiteral("RelationButton"));
-        RelationButton->setGeometry(QRect(700, 110, 98, 26));
+        outputIntersection = new QPushButton(glArea);
+        outputIntersection->setObjectName(QStringLiteral("outputIntersection"));
+        outputIntersection->setGeometry(QRect(720, 80, 75, 23));
+        showChosedCFButton = new QPushButton(glArea);
+        showChosedCFButton->setObjectName(QStringLiteral("showChosedCFButton"));
+        showChosedCFButton->setGeometry(QRect(710, 40, 81, 31));
+        LineGen = new QPushButton(glArea);
+        LineGen->setObjectName(QStringLiteral("LineGen"));
+        LineGen->setGeometry(QRect(680, 110, 112, 34));
 
         horizontalLayout_20->addWidget(glArea);
 
@@ -287,7 +285,7 @@ public:
         tab_10->setObjectName(QStringLiteral("tab_10"));
         layoutWidget = new QWidget(tab_10);
         layoutWidget->setObjectName(QStringLiteral("layoutWidget"));
-        layoutWidget->setGeometry(QRect(11, 11, 169, 44));
+        layoutWidget->setGeometry(QRect(11, 11, 175, 47));
         verticalLayout_2 = new QVBoxLayout(layoutWidget);
         verticalLayout_2->setSpacing(6);
         verticalLayout_2->setContentsMargins(11, 11, 11, 11);
@@ -347,21 +345,15 @@ public:
 
         verticalLayout_2->addLayout(horizontalLayout_2);
 
-        PF = new QCheckBox(tab_10);
-        PF->setObjectName(QStringLiteral("PF"));
-        PF->setGeometry(QRect(20, 60, 71, 16));
         AutoFacePick = new QCheckBox(tab_10);
         AutoFacePick->setObjectName(QStringLiteral("AutoFacePick"));
         AutoFacePick->setGeometry(QRect(70, 60, 71, 16));
-        CustomCheck = new QCheckBox(tab_10);
-        CustomCheck->setObjectName(QStringLiteral("CustomCheck"));
-        CustomCheck->setGeometry(QRect(140, 60, 71, 16));
         tabWidget_2->addTab(tab_10, QString());
         tab_11 = new QWidget();
         tab_11->setObjectName(QStringLiteral("tab_11"));
         layoutWidget1 = new QWidget(tab_11);
         layoutWidget1->setObjectName(QStringLiteral("layoutWidget1"));
-        layoutWidget1->setGeometry(QRect(10, 10, 183, 53));
+        layoutWidget1->setGeometry(QRect(10, 10, 192, 56));
         verticalLayout = new QVBoxLayout(layoutWidget1);
         verticalLayout->setSpacing(6);
         verticalLayout->setContentsMargins(11, 11, 11, 11);
@@ -433,7 +425,7 @@ public:
         tab_12->setObjectName(QStringLiteral("tab_12"));
         layoutWidget2 = new QWidget(tab_12);
         layoutWidget2->setObjectName(QStringLiteral("layoutWidget2"));
-        layoutWidget2->setGeometry(QRect(10, 10, 169, 55));
+        layoutWidget2->setGeometry(QRect(10, 10, 175, 58));
         verticalLayout_3 = new QVBoxLayout(layoutWidget2);
         verticalLayout_3->setSpacing(6);
         verticalLayout_3->setContentsMargins(11, 11, 11, 11);
@@ -505,7 +497,7 @@ public:
         tab_20->setObjectName(QStringLiteral("tab_20"));
         layoutWidget3 = new QWidget(tab_20);
         layoutWidget3->setObjectName(QStringLiteral("layoutWidget3"));
-        layoutWidget3->setGeometry(QRect(30, 20, 142, 52));
+        layoutWidget3->setGeometry(QRect(30, 20, 145, 55));
         verticalLayout_12 = new QVBoxLayout(layoutWidget3);
         verticalLayout_12->setSpacing(6);
         verticalLayout_12->setContentsMargins(11, 11, 11, 11);
@@ -633,7 +625,7 @@ public:
         tab_14->setObjectName(QStringLiteral("tab_14"));
         layoutWidget4 = new QWidget(tab_14);
         layoutWidget4->setObjectName(QStringLiteral("layoutWidget4"));
-        layoutWidget4->setGeometry(QRect(10, 20, 164, 30));
+        layoutWidget4->setGeometry(QRect(10, 20, 173, 30));
         horizontalLayout_14 = new QHBoxLayout(layoutWidget4);
         horizontalLayout_14->setSpacing(6);
         horizontalLayout_14->setContentsMargins(11, 11, 11, 11);
@@ -672,7 +664,7 @@ public:
         tab_15->setObjectName(QStringLiteral("tab_15"));
         layoutWidget5 = new QWidget(tab_15);
         layoutWidget5->setObjectName(QStringLiteral("layoutWidget5"));
-        layoutWidget5->setGeometry(QRect(0, 10, 213, 51));
+        layoutWidget5->setGeometry(QRect(0, 10, 225, 54));
         verticalLayout_4 = new QVBoxLayout(layoutWidget5);
         verticalLayout_4->setSpacing(6);
         verticalLayout_4->setContentsMargins(11, 11, 11, 11);
@@ -751,7 +743,7 @@ public:
         tab_13->setObjectName(QStringLiteral("tab_13"));
         layoutWidget6 = new QWidget(tab_13);
         layoutWidget6->setObjectName(QStringLiteral("layoutWidget6"));
-        layoutWidget6->setGeometry(QRect(10, 10, 176, 52));
+        layoutWidget6->setGeometry(QRect(10, 10, 185, 55));
         horizontalLayout_15 = new QHBoxLayout(layoutWidget6);
         horizontalLayout_15->setSpacing(6);
         horizontalLayout_15->setContentsMargins(11, 11, 11, 11);
@@ -803,7 +795,7 @@ public:
         tab_4->setObjectName(QStringLiteral("tab_4"));
         layoutWidget7 = new QWidget(tab_4);
         layoutWidget7->setObjectName(QStringLiteral("layoutWidget7"));
-        layoutWidget7->setGeometry(QRect(10, 12, 191, 33));
+        layoutWidget7->setGeometry(QRect(10, 12, 197, 33));
         horizontalLayout_16 = new QHBoxLayout(layoutWidget7);
         horizontalLayout_16->setSpacing(6);
         horizontalLayout_16->setContentsMargins(11, 11, 11, 11);
@@ -852,7 +844,7 @@ public:
         tab_16->setObjectName(QStringLiteral("tab_16"));
         layoutWidget8 = new QWidget(tab_16);
         layoutWidget8->setObjectName(QStringLiteral("layoutWidget8"));
-        layoutWidget8->setGeometry(QRect(10, 10, 159, 44));
+        layoutWidget8->setGeometry(QRect(10, 10, 165, 47));
         verticalLayout_5 = new QVBoxLayout(layoutWidget8);
         verticalLayout_5->setSpacing(6);
         verticalLayout_5->setContentsMargins(11, 11, 11, 11);
@@ -917,7 +909,7 @@ public:
         tab_17->setObjectName(QStringLiteral("tab_17"));
         layoutWidget9 = new QWidget(tab_17);
         layoutWidget9->setObjectName(QStringLiteral("layoutWidget9"));
-        layoutWidget9->setGeometry(QRect(10, 10, 137, 18));
+        layoutWidget9->setGeometry(QRect(10, 10, 143, 18));
         horizontalLayout_11 = new QHBoxLayout(layoutWidget9);
         horizontalLayout_11->setSpacing(6);
         horizontalLayout_11->setContentsMargins(11, 11, 11, 11);
@@ -955,7 +947,7 @@ public:
         c_ssl->setEnabled(true);
         layoutWidget10 = new QWidget(c_ssl);
         layoutWidget10->setObjectName(QStringLiteral("layoutWidget10"));
-        layoutWidget10->setGeometry(QRect(0, 0, 157, 22));
+        layoutWidget10->setGeometry(QRect(0, 0, 163, 22));
         horizontalLayout_12 = new QHBoxLayout(layoutWidget10);
         horizontalLayout_12->setSpacing(6);
         horizontalLayout_12->setContentsMargins(11, 11, 11, 11);
@@ -992,7 +984,7 @@ public:
         c_qua->setObjectName(QStringLiteral("c_qua"));
         layoutWidget11 = new QWidget(c_qua);
         layoutWidget11->setObjectName(QStringLiteral("layoutWidget11"));
-        layoutWidget11->setGeometry(QRect(20, 10, 120, 18));
+        layoutWidget11->setGeometry(QRect(20, 10, 123, 18));
         horizontalLayout_13 = new QHBoxLayout(layoutWidget11);
         horizontalLayout_13->setSpacing(6);
         horizontalLayout_13->setContentsMargins(11, 11, 11, 11);
@@ -1054,7 +1046,7 @@ public:
         disQuaInfo->setMaximumSize(QSize(181, 31));
         layoutWidget12 = new QWidget(tab_18);
         layoutWidget12->setObjectName(QStringLiteral("layoutWidget12"));
-        layoutWidget12->setGeometry(QRect(1, 1, 225, 99));
+        layoutWidget12->setGeometry(QRect(1, 1, 225, 108));
         verticalLayout_13 = new QVBoxLayout(layoutWidget12);
         verticalLayout_13->setSpacing(6);
         verticalLayout_13->setContentsMargins(11, 11, 11, 11);
@@ -1148,7 +1140,7 @@ public:
         tab_19->setObjectName(QStringLiteral("tab_19"));
         layoutWidget13 = new QWidget(tab_19);
         layoutWidget13->setObjectName(QStringLiteral("layoutWidget13"));
-        layoutWidget13->setGeometry(QRect(0, 0, 223, 152));
+        layoutWidget13->setGeometry(QRect(0, 0, 223, 167));
         verticalLayout_8 = new QVBoxLayout(layoutWidget13);
         verticalLayout_8->setSpacing(6);
         verticalLayout_8->setContentsMargins(11, 11, 11, 11);
@@ -1257,7 +1249,7 @@ public:
         tab->setObjectName(QStringLiteral("tab"));
         layoutWidget14 = new QWidget(tab);
         layoutWidget14->setObjectName(QStringLiteral("layoutWidget14"));
-        layoutWidget14->setGeometry(QRect(0, 10, 180, 24));
+        layoutWidget14->setGeometry(QRect(0, 10, 183, 24));
         horizontalLayout_19 = new QHBoxLayout(layoutWidget14);
         horizontalLayout_19->setSpacing(6);
         horizontalLayout_19->setContentsMargins(11, 11, 11, 11);
@@ -1321,9 +1313,9 @@ public:
     {
         FPartitionClass->setWindowTitle(QApplication::translate("FPartitionClass", "FPartition", Q_NULLPTR));
         Batch->setText(QApplication::translate("FPartitionClass", "Batch", Q_NULLPTR));
-        NormClass->setText(QApplication::translate("FPartitionClass", "norm", Q_NULLPTR));
-        HighLightCF->setText(QApplication::translate("FPartitionClass", "highlight", Q_NULLPTR));
-        RelationButton->setText(QApplication::translate("FPartitionClass", "Relation", Q_NULLPTR));
+        outputIntersection->setText(QApplication::translate("FPartitionClass", "output", Q_NULLPTR));
+        showChosedCFButton->setText(QApplication::translate("FPartitionClass", "chosedCF", Q_NULLPTR));
+        LineGen->setText(QApplication::translate("FPartitionClass", "generateLine", Q_NULLPTR));
 #ifndef QT_NO_TOOLTIP
         comboBox->setToolTip(QApplication::translate("FPartitionClass", "Model selection", Q_NULLPTR));
 #endif // QT_NO_TOOLTIP
@@ -1352,9 +1344,7 @@ public:
         showSingular->setToolTip(QApplication::translate("FPartitionClass", "singular", Q_NULLPTR));
 #endif // QT_NO_TOOLTIP
         showSingular->setText(QApplication::translate("FPartitionClass", "SV", Q_NULLPTR));
-        PF->setText(QApplication::translate("FPartitionClass", "PF", Q_NULLPTR));
         AutoFacePick->setText(QApplication::translate("FPartitionClass", "AutoPF", Q_NULLPTR));
-        CustomCheck->setText(QApplication::translate("FPartitionClass", "Custom", Q_NULLPTR));
         tabWidget_2->setTabText(tabWidget_2->indexOf(tab_10), QApplication::translate("FPartitionClass", "mesh", Q_NULLPTR));
 #ifndef QT_NO_TOOLTIP
         directField->setToolTip(QApplication::translate("FPartitionClass", "Direction field", Q_NULLPTR));
